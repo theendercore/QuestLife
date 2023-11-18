@@ -24,6 +24,9 @@ modSettings {
     entrypoint("main", "org.teamvoided.template.Template::commonInit")
     entrypoint("client", "org.teamvoided.template.Template::clientInit")
 }
+dependencies {
+    modImplementation(files("sqlite-jdbc.jar"))
+}
 
 tasks {
     val targetJavaVersion = 17
