@@ -2,14 +2,14 @@ package org.teamvoided.template.init
 
 import net.fabricmc.fabric.api.command.v2.ArgumentTypeRegistry
 import org.teamvoided.template.Template.id
-import org.teamvoided.template.commands.QuestArgumentType
-import org.teamvoided.template.commands.QuestCommand
+import org.teamvoided.template.commands.TaskArgumentType
+import org.teamvoided.template.commands.TaskCommand
 
 object CommandRegistry {
     fun init(){
         ArgumentTypeRegistry
-            .registerArgumentType(id("quest_type"), QuestArgumentType::class.java, QuestArgumentType.Info())
+            .registerArgumentType(id("quest_type"), TaskArgumentType::class.java, TaskArgumentType.Info())
 
-        QuestCommand.register()
+        TaskCommand.register()
     }
 }
