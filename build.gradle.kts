@@ -15,6 +15,9 @@ val modid = project.properties["modid"]!! as String
 
 repositories {
     mavenCentral()
+    maven("https://api.modrinth.com/maven") {
+        name = "Modrinth"
+    }
 }
 
 modSettings {
@@ -25,7 +28,9 @@ modSettings {
     entrypoint("client", "org.teamvoided.template.Template::clientInit")
 }
 dependencies {
-    modImplementation(files("sqlite-jdbc.jar"))
+//    modImplementation(files("sqlite-jdbc.jar"))
+    modImplementation ("maven.modrinth:sqlite-jdbc:3.41.2.1+20230506")
+    include("maven.modrinth:sqlite-jdbc:3.41.2.1+20230506")
 }
 
 tasks {

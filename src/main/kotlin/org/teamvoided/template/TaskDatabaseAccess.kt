@@ -8,7 +8,7 @@ import java.sql.*
 import java.util.*
 
 
-object TaskData {
+object TaskDatabaseAccess {
     fun init() {
         connect {
             it.executeUpdate("create table if not exists task (id integer primary key, type string, data string, times_used integer)")
@@ -53,7 +53,7 @@ object TaskData {
                 }
                 if (taskList.isNotEmpty()) {
                     taskList = taskList.filter { task -> (min == max) || task.timesUsed == min }
-                        .toMutableList()  //|| if (max - 1 != min)(task.timesUsed < max - 1) else true
+                        .toMutableList()
                     taskList.shuffle()
                     val task = taskList[0]
                     value = task.data
@@ -73,13 +73,14 @@ object TaskData {
         else return Errorable(value, Optional.empty())
     }
 
-    fun getAll(type: TaskType): Errorable<String> {
+    fun getAll(type: TaskType?): Errorable<String> {
         var value = ""
         try {
             connect {
-                val result: ResultSet = it.executeQuery("select * from task where type='$type'")
+                val result: ResultSet =
+                    it.executeQuery("select * from task ${if (type != null) "where type='$type'" else ""}")
                 while (result.next()) {
-                    value += "\n[${result.getString("type")}]-${result.getString("data")}"
+                    value += "\n[${result.getInt("id")}][${result.getString("type")}] - ${result.getString("data")}"
                 }
             }
         } catch (e: Error) {

@@ -13,7 +13,7 @@ object Template {
 
     fun commonInit() {
         LOG.info("Hello from Common")
-        TaskData.init()
+        TaskDatabaseAccess.init()
         CommandRegistry.init()
     }
 
