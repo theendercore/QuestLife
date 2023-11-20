@@ -1,9 +1,9 @@
-package org.teamvoided.template.init
+package com.theendercore.task_life.init
 
 import net.fabricmc.fabric.api.command.v2.ArgumentTypeRegistry
-import org.teamvoided.template.Template.id
-import org.teamvoided.template.commands.TaskArgumentType
-import org.teamvoided.template.commands.TaskCommand
+import com.theendercore.task_life.TaskLife.id
+import com.theendercore.task_life.commands.TaskArgumentType
+import com.theendercore.task_life.commands.TaskCommand
 
 object CommandRegistry {
     fun init(){

@@ -10,7 +10,7 @@ plugins {
 group = project.properties["maven_group"]!!
 version = project.properties["mod_version"]!!
 base.archivesName.set(project.properties["archives_base_name"] as String)
-description = "TeamVoided Template"
+description = "Task Life is a mod thats inspired by Grians secret life series. Made for the Cornerstone version of it."
 val modid = project.properties["modid"]!! as String
 
 repositories {
@@ -22,13 +22,12 @@ repositories {
 
 modSettings {
     modId(modid)
-    modName("Team Voided Template")
+    modName("Task Life")
 
-    entrypoint("main", "org.teamvoided.template.Template::commonInit")
-    entrypoint("client", "org.teamvoided.template.Template::clientInit")
+    entrypoint("main", "com.theendercore.task_life.TaskLife::commonInit")
+//    entrypoint("client", "com.theendercore.task_life.TaskLife::clientInit")
 }
 dependencies {
-//    modImplementation(files("sqlite-jdbc.jar"))
     modImplementation ("maven.modrinth:sqlite-jdbc:3.41.2.1+20230506")
     include("maven.modrinth:sqlite-jdbc:3.41.2.1+20230506")
 }

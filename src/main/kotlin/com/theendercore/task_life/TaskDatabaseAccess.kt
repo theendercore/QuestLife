@@ -1,8 +1,8 @@
-package org.teamvoided.template
+package com.theendercore.task_life
 
 import net.fabricmc.loader.api.FabricLoader
-import org.teamvoided.template.Template.LOG
-import org.teamvoided.template.commands.TaskType
+import com.theendercore.task_life.TaskLife.LOG
+import com.theendercore.task_life.commands.TaskType
 import java.nio.file.Paths
 import java.sql.*
 import java.util.*

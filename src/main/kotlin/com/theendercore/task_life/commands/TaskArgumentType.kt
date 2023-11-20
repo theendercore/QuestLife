@@ -1,4 +1,4 @@
-package org.teamvoided.template.commands
+package com.theendercore.task_life.commands
 
 import com.google.gson.JsonObject
 import com.mojang.brigadier.context.CommandContext
@@ -12,8 +12,6 @@ class TaskArgumentType :
     EnumArgumentType<TaskType>(TaskType.Codec, { TaskType.entries.toTypedArray() }) {
 
     companion object {
-        fun type(): EnumArgumentType<TaskType> = TaskArgumentType()
-
         fun getTaskType(context: CommandContext<ServerCommandSource>, name: String): TaskType =
             context.getArgument(name, TaskType::class.java)
     }

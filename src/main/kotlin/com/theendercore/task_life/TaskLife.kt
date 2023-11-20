@@ -1,15 +1,15 @@
-package org.teamvoided.template
+package com.theendercore.task_life
 
 import net.minecraft.util.Identifier
 import org.slf4j.LoggerFactory
-import org.teamvoided.template.init.CommandRegistry
+import com.theendercore.task_life.init.CommandRegistry
 
 @Suppress("unused")
-object Template {
+object TaskLife {
     const val MODID = "template"
 
     @JvmField
-    val LOG = LoggerFactory.getLogger(Template::class.java)
+    val LOG = LoggerFactory.getLogger(TaskLife::class.java)
 
     fun commonInit() {
         LOG.info("Hello from Common")
@@ -18,9 +18,8 @@ object Template {
     }
 
     fun clientInit() {
-        LOG.info("Hello from Client")
+        LOG.info(":)")
     }
 
     fun id(path: String) = Identifier(MODID, path)
-    fun mc(path: String) = Identifier(path)
 }

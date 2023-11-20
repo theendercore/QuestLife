@@ -1,4 +1,4 @@
-package org.teamvoided.template.commands
+package com.theendercore.task_life.commands
 
 import net.minecraft.util.StringIdentifiable
 

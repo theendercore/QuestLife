@@ -1,4 +1,4 @@
-package org.teamvoided.template.commands
+package com.theendercore.task_life.commands
 
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.context.CommandContext
@@ -11,7 +11,7 @@ import net.minecraft.nbt.NbtString
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
-import org.teamvoided.template.TaskDatabaseAccess
+import com.theendercore.task_life.TaskDatabaseAccess
 
 
 object TaskCommand {
@@ -22,7 +22,7 @@ object TaskCommand {
             dispatcher.root.addChild(taskNode)
             // /task add
             val addNode = CommandManager.literal("add")
-                .executes { this.add(it) }
+                .executes { add(it) }
                 .build()
             taskNode.addChild(addNode)
             // /task add *type*
@@ -33,7 +33,7 @@ object TaskCommand {
             // /task add *type* *task*
             val addTaskNode = CommandManager
                 .argument("task", MessageArgumentType.message())
-                .executes { this.add(it) }
+                .executes { add(it) }
                 .build()
             addTypeNode.addChild(addTaskNode)
 
@@ -45,20 +45,20 @@ object TaskCommand {
             // /task generate *type*
             val genTypeNode = CommandManager
                 .argument("type", TaskArgumentType())
-                .executes { this.generate(it) }
+                .executes { generate(it) }
                 .build()
             generateNode.addChild(genTypeNode)
 
             // /task list
             val listNode = CommandManager
                 .literal("list")
-                .executes { this.list(it, null) }
+                .executes { list(it, null) }
                 .build()
             taskNode.addChild(listNode)
             // /task list *type*
             val listTypeNode = CommandManager
                 .argument("type", TaskArgumentType())
-                .executes { this.list(it, TaskArgumentType.getTaskType(it, "type")) }
+                .executes { list(it, TaskArgumentType.getTaskType(it, "type")) }
                 .build()
             listNode.addChild(listTypeNode)
 
@@ -70,7 +70,7 @@ object TaskCommand {
             // /task get *id*
             val getIdNode = CommandManager
                 .argument("id", IntegerArgumentType.integer(1))
-                .executes { this.getTask(it, IntegerArgumentType.getInteger(it, "id")) }
+                .executes { getTask(it, IntegerArgumentType.getInteger(it, "id")) }
                 .build()
             getNode.addChild(getIdNode)
 
@@ -83,7 +83,7 @@ object TaskCommand {
             // /task delete *id*
             val deleteIdNode = CommandManager
                 .argument("id", IntegerArgumentType.integer(1))
-                .executes { this.deleteTask(it, IntegerArgumentType.getInteger(it, "id")) }
+                .executes { deleteTask(it, IntegerArgumentType.getInteger(it, "id")) }
                 .build()
             deleteNode.addChild(deleteIdNode)
 
