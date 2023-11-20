@@ -2,7 +2,10 @@ package com.theendercore.task_life.commands
 
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.context.CommandContext
+import com.theendercore.task_life.TaskDatabaseAccess
+import com.theendercore.task_life.TaskLife.GameDir
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
+import net.minecraft.command.argument.EntityArgumentType
 import net.minecraft.command.argument.MessageArgumentType
 import net.minecraft.entity.ItemEntity
 import net.minecraft.item.Items
@@ -10,12 +13,11 @@ import net.minecraft.nbt.NbtList
 import net.minecraft.nbt.NbtString
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.text.Text
-import com.theendercore.task_life.TaskDatabaseAccess
-import com.theendercore.task_life.TaskLife.GameDir
-import net.minecraft.command.argument.EntityArgumentType
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
+import net.minecraft.text.Text
+import java.io.BufferedReader
+import java.io.FileReader
 import java.io.FileWriter
 import java.nio.file.Paths
 
@@ -111,6 +113,13 @@ object TaskCommand {
                 .executes { export(it) }
                 .build()
             taskNode.addChild(exportNode)
+
+//            // /task import
+            val importNode = CommandManager
+                .literal("import")
+                .executes { import(it, false) }
+                .build()
+            taskNode.addChild(importNode)
         })
     }
 
@@ -133,7 +142,7 @@ object TaskCommand {
         val source = context.source
         var players = inPlayers
         var outInt = players?.size
-        var output = "Generated $type Tasks for ${outInt} players!"
+        var output = "Generated $type Tasks for $outInt players!"
         if (inPlayers == null) {
             val player = source.player
             if (player == null) {
@@ -213,9 +222,8 @@ object TaskCommand {
         val data = result.value!!
         var exportString = "TYPE,TASK,TIMES_USED\n"
         data.forEach { exportString += it.toCsvString() + "\n" }
-        val path = Paths.get(GameDir, "export").toFile()
-        path.mkdirs()
-        val exportFile = FileWriter(Paths.get(path.toString(), "tasks.csv").toFile())
+        val exportFile =
+            FileWriter(Paths.get(Paths.get(GameDir, "export").toString(), "tasks.csv").toFile())
         exportFile.write(exportString)
         exportFile.close()
 
@@ -225,6 +233,30 @@ object TaskCommand {
 
     private fun import(context: CommandContext<ServerCommandSource>, readTimesUsed: Boolean): Int {
         val source = context.source
+        val file = Paths.get(Paths.get(GameDir, "import").toString(), "tasks.csv").toFile()
+        if (!file.exists()) {
+            source.sendError(Text.literal("File doesn't exist!"))
+            return 0
+        }
+        val importFile = BufferedReader(FileReader(file))
+        try {
+            for (it in importFile.lines()) {
+                if (it.contains(",")) {
+                    val slices = it.split(",")
+                    val type = slices[0].trim()
+                    if (type.trim() == "") break
+                    val task = slices[1].trim()
+                    var count = ""
+                    if (readTimesUsed) count = slices[2].trim()
+
+                    println("[$type, $task, $count]")
+                }
+            }
+        } catch (e: Error) {
+            source.sendError(Text.literal("[Error While Reading] $e"))
+            return 0
+        }
+        source.sendSystemMessage(Text.literal("Tasks exported!"))
         return 1
     }
 }
