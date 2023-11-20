@@ -1,6 +1,5 @@
 package com.theendercore.task_life.commands
 
-import com.mojang.authlib.GameProfile
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.context.CommandContext
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
@@ -14,7 +13,9 @@ import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
 import com.theendercore.task_life.TaskDatabaseAccess
 import com.theendercore.task_life.TaskLife.GameDir
-import net.minecraft.command.argument.GameProfileArgumentType
+import net.minecraft.command.argument.EntityArgumentType
+import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.world.ServerWorld
 import java.io.FileWriter
 import java.nio.file.Paths
 
@@ -55,12 +56,12 @@ object TaskCommand {
             generateNode.addChild(genTypeNode)
             // /task generate *type* *target*
             val genTargetNode = CommandManager
-                .argument("target", GameProfileArgumentType.gameProfile())
+                .argument("target", EntityArgumentType.players())
                 .executes {
                     generate(
                         it,
                         TaskArgumentType.getTaskType(it, "type"),
-                        GameProfileArgumentType.getProfileArgument(it, "target")
+                        EntityArgumentType.getOptionalPlayers(it, "target")
                     )
                 }
                 .build()
@@ -127,32 +128,44 @@ object TaskCommand {
     }
 
     private fun generate(
-        context: CommandContext<ServerCommandSource>,
-        type: TaskType,
-        profiles: Collection<GameProfile>?
+        context: CommandContext<ServerCommandSource>, type: TaskType, inPlayers: Collection<ServerPlayerEntity>?
     ): Int {
         val source = context.source
-        val player = source.player
-        if (player == null) {
-            source.sendError(Text.literal("Command Must be run by Player"))
-            return 0
+        var players = inPlayers
+        var outInt = players?.size
+        var output = "Generated $type Tasks for ${outInt} players!"
+        if (inPlayers == null) {
+            val player = source.player
+            if (player == null) {
+                source.sendError(Text.literal("Command Must be run by Player"))
+                return 0
+            }
+            players = listOf(player)
+            output = "Generated $type Task!"
+            outInt = 1
         }
-        val result = TaskDatabaseAccess.get(type, true)
-        if (result.error.isPresent) {
-            source.sendError(Text.literal("Error: ${result.error.get()}"))
-            return 0
+
+        players!!.forEach { player ->
+            val result = TaskDatabaseAccess.get(type, true)
+            if (result.error.isPresent) {
+                source.sendError(Text.literal("Error: ${result.error.get()}"))
+                return 0
+            }
+            genBook(result.value!!, type, source.world, player)
         }
-        val data = result.value!!
-        val book = Items.WRITTEN_BOOK.defaultStack //book
+
+        source.sendSystemMessage(Text.literal(output))
+        return outInt!!
+    }
+
+    private fun genBook(data: String, type: TaskType, world: ServerWorld, player: ServerPlayerEntity) {
+        val book = Items.WRITTEN_BOOK.defaultStack
         book.setSubNbt("author", NbtString.of("The Task Master"))
         book.setSubNbt("title", NbtString.of("$type Task"))
         val list = NbtList()
         list.add(NbtString.of(Text.Serializer.toJson(Text.literal(data))))
         book.setSubNbt("pages", list)
-        source.world.spawnEntity(ItemEntity(source.world, player.x, player.y, player.z, book))
-
-        source.sendSystemMessage(Text.literal("Generated $type Task!"))
-        return 1
+        world.spawnEntity(ItemEntity(world, player.x, player.y, player.z, book))
     }
 
     private fun getTask(context: CommandContext<ServerCommandSource>, id: Int): Int {
@@ -212,7 +225,6 @@ object TaskCommand {
 
     private fun import(context: CommandContext<ServerCommandSource>, readTimesUsed: Boolean): Int {
         val source = context.source
-
         return 1
     }
 }
