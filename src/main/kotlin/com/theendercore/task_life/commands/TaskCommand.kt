@@ -1,5 +1,6 @@
 package com.theendercore.task_life.commands
 
+import com.mojang.authlib.GameProfile
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.context.CommandContext
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
@@ -12,6 +13,10 @@ import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
 import com.theendercore.task_life.TaskDatabaseAccess
+import com.theendercore.task_life.TaskLife.GameDir
+import net.minecraft.command.argument.GameProfileArgumentType
+import java.io.FileWriter
+import java.nio.file.Paths
 
 
 object TaskCommand {
@@ -45,9 +50,21 @@ object TaskCommand {
             // /task generate *type*
             val genTypeNode = CommandManager
                 .argument("type", TaskArgumentType())
-                .executes { generate(it) }
+                .executes { generate(it, TaskArgumentType.getTaskType(it, "type"), null) }
                 .build()
             generateNode.addChild(genTypeNode)
+            // /task generate *type* *target*
+            val genTargetNode = CommandManager
+                .argument("target", GameProfileArgumentType.gameProfile())
+                .executes {
+                    generate(
+                        it,
+                        TaskArgumentType.getTaskType(it, "type"),
+                        GameProfileArgumentType.getProfileArgument(it, "target")
+                    )
+                }
+                .build()
+            genTypeNode.addChild(genTargetNode)
 
             // /task list
             val listNode = CommandManager
@@ -88,10 +105,11 @@ object TaskCommand {
             deleteNode.addChild(deleteIdNode)
 
 //            // /task export
-//            val exportNode = CommandManager
-//                .literal("delete")
-//                .build()
-//            taskNode.addChild(export)
+            val exportNode = CommandManager
+                .literal("export")
+                .executes { export(it) }
+                .build()
+            taskNode.addChild(exportNode)
         })
     }
 
@@ -108,10 +126,13 @@ object TaskCommand {
         return 1
     }
 
-    private fun generate(context: CommandContext<ServerCommandSource>): Int {
+    private fun generate(
+        context: CommandContext<ServerCommandSource>,
+        type: TaskType,
+        profiles: Collection<GameProfile>?
+    ): Int {
         val source = context.source
         val player = source.player
-        val type = TaskArgumentType.getTaskType(context, "type")
         if (player == null) {
             source.sendError(Text.literal("Command Must be run by Player"))
             return 0
@@ -166,6 +187,32 @@ object TaskCommand {
         }
         val data = result.value!!
         data.forEach { source.sendSystemMessage(Text.literal("\n[${it.id}][${it.type}] - ${it.data}")) }
+        return 1
+    }
+
+    private fun export(context: CommandContext<ServerCommandSource>): Int {
+        val source = context.source
+        val result = TaskDatabaseAccess.getAll(null)
+        if (result.error.isPresent) {
+            source.sendError(Text.literal("Error: ${result.error.get()}"))
+            return 0
+        }
+        val data = result.value!!
+        var exportString = "TYPE,TASK,TIMES_USED\n"
+        data.forEach { exportString += it.toCsvString() + "\n" }
+        val path = Paths.get(GameDir, "export").toFile()
+        path.mkdirs()
+        val exportFile = FileWriter(Paths.get(path.toString(), "tasks.csv").toFile())
+        exportFile.write(exportString)
+        exportFile.close()
+
+        source.sendSystemMessage(Text.literal("Tasks exported!"))
+        return 1
+    }
+
+    private fun import(context: CommandContext<ServerCommandSource>, readTimesUsed: Boolean): Int {
+        val source = context.source
+
         return 1
     }
 }

@@ -1,6 +1,6 @@
 package com.theendercore.task_life
 
-import net.fabricmc.loader.api.FabricLoader
+import com.theendercore.task_life.TaskLife.GameDir
 import com.theendercore.task_life.TaskLife.LOG
 import com.theendercore.task_life.commands.TaskType
 import java.nio.file.Paths
@@ -146,9 +146,10 @@ object TaskDatabaseAccess {
         }
     }
 
-    private fun dpPath(): String =
-        Paths.get(FabricLoader.getInstance().gameDir.toString(), "data", "task_data.db").toString()
+    private fun dpPath(): String = Paths.get(GameDir, "data", "task_data.db").toString()
 
     data class Errorable<T>(val value: T?, val error: Optional<String>)
-    data class QueryTask(val id: Int, val type: TaskType, val data: String, val timesUsed: Int)
+    data class QueryTask(val id: Int, val type: TaskType, val data: String, val timesUsed: Int) {
+        fun toCsvString(): String = "$type,$data,$timesUsed"
+    }
 }

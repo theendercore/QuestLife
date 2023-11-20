@@ -3,6 +3,8 @@ package com.theendercore.task_life
 import net.minecraft.util.Identifier
 import org.slf4j.LoggerFactory
 import com.theendercore.task_life.init.CommandRegistry
+import net.fabricmc.loader.api.FabricLoader
+import java.nio.file.Paths
 
 @Suppress("unused")
 object TaskLife {
@@ -10,9 +12,12 @@ object TaskLife {
 
     @JvmField
     val LOG = LoggerFactory.getLogger(TaskLife::class.java)
+    @JvmField
+    val GameDir = FabricLoader.getInstance().gameDir.toString()
 
     fun commonInit() {
         LOG.info("Hello from Common")
+        Paths.get(GameDir, "import").toFile().mkdirs()
         TaskDatabaseAccess.init()
         CommandRegistry.init()
     }
