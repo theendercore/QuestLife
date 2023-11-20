@@ -73,21 +73,37 @@ object TaskCommand {
                 .executes { this.getTask(it, IntegerArgumentType.getInteger(it, "id")) }
                 .build()
             getNode.addChild(getIdNode)
+
+
+            // /task delete
+            val deleteNode = CommandManager
+                .literal("delete")
+                .build()
+            taskNode.addChild(deleteNode)
+            // /task delete *id*
+            val deleteIdNode = CommandManager
+                .argument("id", IntegerArgumentType.integer(1))
+                .executes { this.deleteTask(it, IntegerArgumentType.getInteger(it, "id")) }
+                .build()
+            deleteNode.addChild(deleteIdNode)
+
+//            // /task export
+//            val exportNode = CommandManager
+//                .literal("delete")
+//                .build()
+//            taskNode.addChild(export)
         })
     }
 
     private fun add(context: CommandContext<ServerCommandSource>): Int {
         val source = context.source
-
         val type = TaskArgumentType.getTaskType(context, "type")
         val task = MessageArgumentType.getMessage(context, "task").string
-
         val error = TaskDatabaseAccess.add(type, task)
         if (error.isPresent) {
             source.sendError(Text.literal("Error: ${error.get()}"))
             return 0
         }
-
         source.sendSystemMessage(Text.literal("New $type task added!"))
         return 1
     }
@@ -100,14 +116,12 @@ object TaskCommand {
             source.sendError(Text.literal("Command Must be run by Player"))
             return 0
         }
-
         val result = TaskDatabaseAccess.get(type, true)
         if (result.error.isPresent) {
             source.sendError(Text.literal("Error: ${result.error.get()}"))
             return 0
         }
         val data = result.value!!
-
         val book = Items.WRITTEN_BOOK.defaultStack //book
         book.setSubNbt("author", NbtString.of("The Task Master"))
         book.setSubNbt("title", NbtString.of("$type Task"))
@@ -121,9 +135,7 @@ object TaskCommand {
     }
 
     private fun getTask(context: CommandContext<ServerCommandSource>, id: Int): Int {
-
         val source = context.source
-
         val result = TaskDatabaseAccess.getOne(id)
         if (result.error.isPresent) {
             source.sendError(Text.literal("Error: ${result.error.get()}"))
@@ -131,13 +143,22 @@ object TaskCommand {
         }
         val data = result.value!!
         source.sendSystemMessage(Text.literal("Task [$id] - $data"))
+        return 1
+    }
 
+    private fun deleteTask(context: CommandContext<ServerCommandSource>, id: Int): Int {
+        val source = context.source
+        val error = TaskDatabaseAccess.deleteOne(id)
+        if (error.isPresent) {
+            source.sendError(Text.literal("Error: ${error.get()}"))
+            return 0
+        }
+        source.sendSystemMessage(Text.literal("Task [$id] deleted!"))
         return 1
     }
 
     private fun list(context: CommandContext<ServerCommandSource>, type: TaskType?): Int {
         val source = context.source
-
         val result = TaskDatabaseAccess.getAll(type)
         if (result.error.isPresent) {
             source.sendError(Text.literal("Error: ${result.error.get()}"))

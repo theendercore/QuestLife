@@ -112,6 +112,18 @@ object TaskDatabaseAccess {
         else return Errorable(value, Optional.empty())
     }
 
+    fun deleteOne(id: Int): Optional<String> {
+        try {
+            connect {
+                it.executeUpdate("delete from task where id=$id")
+            }
+        } catch (e: Error) {
+            LOG.error(e.toString())
+            return Optional.of(e.toString())
+        }
+        return Optional.empty()
+    }
+
     private fun connect(callback: (statement: Statement) -> Unit) {
         var connection: Connection? = null
         try {
