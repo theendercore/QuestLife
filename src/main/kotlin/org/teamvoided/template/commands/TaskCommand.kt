@@ -1,5 +1,6 @@
 package org.teamvoided.template.commands
 
+import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.context.CommandContext
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.minecraft.command.argument.MessageArgumentType
@@ -16,49 +17,62 @@ import org.teamvoided.template.TaskDatabaseAccess
 object TaskCommand {
     fun register() {
         CommandRegistrationCallback.EVENT.register(CommandRegistrationCallback { dispatcher, _, _ ->
+            // /task
             val taskNode = CommandManager.literal("task").requires { it.hasPermissionLevel(2) }.build()
             dispatcher.root.addChild(taskNode)
-
+            // /task add
             val addNode = CommandManager.literal("add")
                 .executes { this.add(it) }
                 .build()
             taskNode.addChild(addNode)
-
+            // /task add *type*
             val addTypeNode = CommandManager
                 .argument("type", TaskArgumentType())
                 .build()
             addNode.addChild(addTypeNode)
-
-            val addMessageNode = CommandManager
+            // /task add *type* *task*
+            val addTaskNode = CommandManager
                 .argument("task", MessageArgumentType.message())
                 .executes { this.add(it) }
                 .build()
-            addTypeNode.addChild(addMessageNode)
+            addTypeNode.addChild(addTaskNode)
 
-
+            // /task generate
             val generateNode = CommandManager
                 .literal("generate")
                 .build()
             taskNode.addChild(generateNode)
-
+            // /task generate *type*
             val genTypeNode = CommandManager
                 .argument("type", TaskArgumentType())
                 .executes { this.generate(it) }
                 .build()
             generateNode.addChild(genTypeNode)
 
-
+            // /task list
             val listNode = CommandManager
                 .literal("list")
                 .executes { this.list(it, null) }
                 .build()
             taskNode.addChild(listNode)
-
+            // /task list *type*
             val listTypeNode = CommandManager
                 .argument("type", TaskArgumentType())
                 .executes { this.list(it, TaskArgumentType.getTaskType(it, "type")) }
                 .build()
             listNode.addChild(listTypeNode)
+
+            // /task get
+            val getNode = CommandManager
+                .literal("get")
+                .build()
+            taskNode.addChild(getNode)
+            // /task get *id*
+            val getIdNode = CommandManager
+                .argument("id", IntegerArgumentType.integer(1))
+                .executes { this.getTask(it, IntegerArgumentType.getInteger(it, "id")) }
+                .build()
+            getNode.addChild(getIdNode)
         })
     }
 
@@ -107,6 +121,21 @@ object TaskCommand {
         return 1
     }
 
+    private fun getTask(context: CommandContext<ServerCommandSource>, id: Int): Int {
+
+        val source = context.source
+
+        val result = TaskDatabaseAccess.getOne(id)
+        if (result.error.isPresent) {
+            source.sendError(Text.of("Error: ${result.error.get()}"))
+            return 0
+        }
+        val data = result.value!!
+        source.sendSystemMessage(Text.literal("Task [$id] - $data"))
+
+        return 1
+    }
+
     private fun list(context: CommandContext<ServerCommandSource>, type: TaskType?): Int {
         val source = context.source
 
@@ -117,7 +146,7 @@ object TaskCommand {
         }
         val data = result.value!!
         data.split("\n").forEach {
-            source.sendSystemMessage(Text.of(it))
+            source.sendSystemMessage(Text.literal(it))
         }
         return 1
     }

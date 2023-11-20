@@ -91,6 +91,27 @@ object TaskDatabaseAccess {
         else Errorable(value.removePrefix("\n"), Optional.empty())
     }
 
+    fun getOne(id: Int): Errorable<String> {
+        var value = ""
+        try {
+            connect {
+                val sql = "select * from task where id=$id"
+                LOG.info(sql)
+                val result: ResultSet = it.executeQuery(sql)
+                while (result.next()) {
+                    value += "(Type=${TaskType.valueOf(result.getString("type"))}, " +
+                            "TimesUsed=${result.getInt("times_used")}, " +
+                            "Task=${result.getString("data")})"
+                }
+            }
+        } catch (e: Error) {
+            LOG.error(e.toString())
+            return Errorable(null, Optional.of(e.toString()))
+        }
+        return if (value == "") Errorable(null, Optional.of("Could not find Task [$id]"))
+        else return Errorable(value, Optional.empty())
+    }
+
     private fun connect(callback: (statement: Statement) -> Unit) {
         var connection: Connection? = null
         try {
@@ -99,11 +120,13 @@ object TaskDatabaseAccess {
             statement.queryTimeout = 30
             callback(statement)
         } catch (e: SQLException) {
+            LOG.error("[Connect Error]")
             LOG.error(e.message)
         } finally {
             try {
                 connection?.close()
             } catch (e: SQLException) {
+                LOG.error("[Close Error]")
                 LOG.error(e.message)
             }
         }
