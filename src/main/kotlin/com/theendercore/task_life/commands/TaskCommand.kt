@@ -165,9 +165,7 @@ object TaskCommand {
             return 0
         }
         val data = result.value!!
-        data.split("\n").forEach {
-            source.sendSystemMessage(Text.literal(it))
-        }
+        data.forEach { source.sendSystemMessage(Text.literal("\n[${it.id}][${it.type}] - ${it.data}")) }
         return 1
     }
 }

@@ -17,9 +17,7 @@ object TaskDatabaseAccess {
 
     fun add(type: TaskType, task: String): Optional<String> {
         try {
-            connect {
-                it.executeUpdate("insert into task values(null, '$type', '$task', 0)")
-            }
+            connect { it.executeUpdate("insert into task values(null, '$type', '$task', 0)") }
         } catch (e: Error) {
             LOG.error(e.toString())
             return Optional.of(e.toString())
@@ -73,22 +71,27 @@ object TaskDatabaseAccess {
         else return Errorable(value, Optional.empty())
     }
 
-    fun getAll(type: TaskType?): Errorable<String> {
-        var value = ""
+    fun getAll(type: TaskType?): Errorable<List<QueryTask>> {
+        val value = mutableListOf<QueryTask>()
         try {
             connect {
                 val result: ResultSet =
                     it.executeQuery("select * from task ${if (type != null) "where type='$type'" else ""}")
                 while (result.next()) {
-                    value += "\n[${result.getInt("id")}][${result.getString("type")}] - ${result.getString("data")}"
+                    value.add(
+                        QueryTask(
+                            result.getInt("id"), TaskType.valueOf(result.getString("type")),
+                            result.getString("data"), result.getInt("times_used")
+                        )
+                    )
                 }
             }
         } catch (e: Error) {
             LOG.error(e.toString())
             return Errorable(null, Optional.of(e.toString()))
         }
-        return if (value == "") Errorable(null, Optional.of("No Tasks"))
-        else Errorable(value.removePrefix("\n"), Optional.empty())
+        return if (value.isEmpty()) Errorable(null, Optional.of("No Tasks"))
+        else Errorable(value, Optional.empty())
     }
 
     fun getOne(id: Int): Errorable<String> {
@@ -113,15 +116,14 @@ object TaskDatabaseAccess {
     }
 
     fun deleteOne(id: Int): Optional<String> {
+        var success = 1
         try {
-            connect {
-                it.executeUpdate("delete from task where id=$id")
-            }
+            connect { success = it.executeUpdate("delete from task where id=$id") }
         } catch (e: Error) {
             LOG.error(e.toString())
             return Optional.of(e.toString())
         }
-        return Optional.empty()
+        return Optional.ofNullable(if (success == 0) "Task [$id] doesn't exists!" else null)
     }
 
     private fun connect(callback: (statement: Statement) -> Unit) {
