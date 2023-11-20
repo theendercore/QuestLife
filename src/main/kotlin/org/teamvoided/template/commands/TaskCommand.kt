@@ -84,12 +84,11 @@ object TaskCommand {
 
         val error = TaskDatabaseAccess.add(type, task)
         if (error.isPresent) {
-            source.sendError(Text.of("Error:"))
-            source.sendError(Text.of(error.get()))
+            source.sendError(Text.literal("Error: ${error.get()}"))
             return 0
         }
 
-        source.sendSystemMessage(Text.of("New $type task added!"))
+        source.sendSystemMessage(Text.literal("New $type task added!"))
         return 1
     }
 
@@ -98,13 +97,13 @@ object TaskCommand {
         val player = source.player
         val type = TaskArgumentType.getTaskType(context, "type")
         if (player == null) {
-            source.sendError(Text.of("Command Must be run by Player"))
+            source.sendError(Text.literal("Command Must be run by Player"))
             return 0
         }
 
         val result = TaskDatabaseAccess.get(type, true)
         if (result.error.isPresent) {
-            source.sendError(Text.of("Error: ${result.error.get()}"))
+            source.sendError(Text.literal("Error: ${result.error.get()}"))
             return 0
         }
         val data = result.value!!
@@ -117,7 +116,7 @@ object TaskCommand {
         book.setSubNbt("pages", list)
         source.world.spawnEntity(ItemEntity(source.world, player.x, player.y, player.z, book))
 
-        source.sendSystemMessage(Text.of("Generated Value: $data"))
+        source.sendSystemMessage(Text.literal("Generated $type Task!"))
         return 1
     }
 
@@ -127,7 +126,7 @@ object TaskCommand {
 
         val result = TaskDatabaseAccess.getOne(id)
         if (result.error.isPresent) {
-            source.sendError(Text.of("Error: ${result.error.get()}"))
+            source.sendError(Text.literal("Error: ${result.error.get()}"))
             return 0
         }
         val data = result.value!!
@@ -141,7 +140,7 @@ object TaskCommand {
 
         val result = TaskDatabaseAccess.getAll(type)
         if (result.error.isPresent) {
-            source.sendError(Text.of("Error: ${result.error.get()}"))
+            source.sendError(Text.literal("Error: ${result.error.get()}"))
             return 0
         }
         val data = result.value!!
