@@ -19,7 +19,7 @@ object TaskLife {
         LOG.info("Hello from Common")
         Paths.get(GameDir, "import").toFile().mkdirs()
         Paths.get(GameDir, "export").toFile().mkdirs()
-        TaskDatabaseAccess.init()
+        TaskDatabaseManager.init()
         CommandRegistry.init()
     }
 

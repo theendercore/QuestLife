@@ -8,16 +8,16 @@ import java.sql.*
 import java.util.*
 
 
-object TaskDatabaseAccess {
+object TaskDatabaseManager {
     fun init() {
         connect {
             it.executeUpdate("create table if not exists task (id integer primary key, type string, data string, times_used integer)")
         }
     }
 
-    fun add(type: TaskType, task: String): Optional<String> {
+    fun add(type: TaskType, task: String, timesUsed: String? = null): Optional<String> {
         try {
-            connect { it.executeUpdate("insert into task values(null, '$type', '$task', 0)") }
+            connect { it.executeUpdate("insert into task values(null, '$type', '$task', ${timesUsed ?: "0"})") }
         } catch (e: Error) {
             LOG.error(e.toString())
             return Optional.of(e.toString())
@@ -56,10 +56,8 @@ object TaskDatabaseAccess {
                     val task = taskList[0]
                     value = task.data
 
-                    if (shouldIncrement) LOG.info(
-                        "Query update: {}",
+                    if (shouldIncrement)
                         it.executeUpdate("update task set times_used=${task.timesUsed + 1} where id=${task.id}")
-                    )
                 }
 
             }
@@ -98,9 +96,7 @@ object TaskDatabaseAccess {
         var value = ""
         try {
             connect {
-                val sql = "select * from task where id=$id"
-                LOG.info(sql)
-                val result: ResultSet = it.executeQuery(sql)
+                val result: ResultSet = it.executeQuery("select * from task where id=$id")
                 while (result.next()) {
                     value += "(Type=${TaskType.valueOf(result.getString("type"))}, " +
                             "TimesUsed=${result.getInt("times_used")}, " +
@@ -124,6 +120,16 @@ object TaskDatabaseAccess {
             return Optional.of(e.toString())
         }
         return Optional.ofNullable(if (success == 0) "Task [$id] doesn't exists!" else null)
+    }
+    fun deleteAll(): Optional<String> {
+        var success = 1
+        try {
+            connect { success = it.executeUpdate("delete from task") }
+        } catch (e: Error) {
+            LOG.error(e.toString())
+            return Optional.of(e.toString())
+        }
+        return Optional.ofNullable(if (success == 0) "No tasks exists!" else null)
     }
 
     private fun connect(callback: (statement: Statement) -> Unit) {
