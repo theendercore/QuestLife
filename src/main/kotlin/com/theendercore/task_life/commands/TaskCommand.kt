@@ -111,6 +111,7 @@ object TaskCommand {
                 .build()
             listNode.addChild(listTypeNode)
 
+
             // /task get
             val getNode = CommandManager
                 .literal("get")
@@ -162,6 +163,12 @@ object TaskCommand {
                 .executes { deleteAll(it, true) }
                 .build()
             taskNode.addChild(deleteAllNode)
+            // /task delete_all *backup*
+            val deleteAllBackupNode = CommandManager
+                .argument("backup", BoolArgumentType.bool())
+                .executes { deleteAll(it, BoolArgumentType.getBool(it, "backup")) }
+                .build()
+            deleteAllNode.addChild(deleteAllBackupNode)
 
         })
     }
