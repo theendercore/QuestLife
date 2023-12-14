@@ -14,11 +14,12 @@ object TaskLife {
     val LOG = LoggerFactory.getLogger(TaskLife::class.java)
     @JvmField
     val GameDir = FabricLoader.getInstance().gameDir.toString()
+    @JvmField
+    val ModDir = Paths.get(GameDir, "data","task_life").toString()
 
     fun commonInit() {
         LOG.info("Hello from Common")
-        Paths.get(GameDir, "import").toFile().mkdirs()
-        Paths.get(GameDir, "export").toFile().mkdirs()
+        Paths.get(ModDir).toFile().mkdirs()
         TaskDatabaseManager.init()
         CommandRegistry.init()
     }

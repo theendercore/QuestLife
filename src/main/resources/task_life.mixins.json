@@ -3,11 +3,8 @@
   "minVersion": "0.8",
   "package": "com.theendercore.task_life.mixin",
   "compatibilityLevel": "JAVA_17",
-  "mixins": [
-    "Template"
-  ],
-  "client": [
-  ],
+  "mixins": [],
+  "client": [],
   "injectors": {
     "defaultRequire": 1
   }
