@@ -1,5 +1,6 @@
 package com.theendercore.task_life.commands
 
+import com.google.common.base.Supplier
 import com.mojang.authlib.GameProfile
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.BoolArgumentType
@@ -45,10 +46,11 @@ object TaskCommand {
             .requires { it.hasPermissionLevel(2) }
             .build()
         dispatcher.root.addChild(taskNode)
+
+
         // /task add
         val addNode = CommandManager
             .literal("add")
-            .executes { add(it) }
             .build()
         taskNode.addChild(addNode)
         // /task add *type*
@@ -59,9 +61,10 @@ object TaskCommand {
         // /task add *type* *task*
         val addTaskNode = CommandManager
             .argument("task", MessageArgumentType.message())
-            .executes { add(it) }
+            .executes { threaded{ add(it) }}
             .build()
         addTypeNode.addChild(addTaskNode)
+
 
         // /task generate
         val generateNode = CommandManager
@@ -71,8 +74,9 @@ object TaskCommand {
         // /task generate *type*
         val genTypeNode = CommandManager
             .argument("type", TaskArgumentType())
-            .executes { generate(it, TaskArgumentType.getTaskType(it, "type"), null) }
+            .executes { threaded{ generate(it, TaskArgumentType.getTaskType(it, "type"), null) } }
             .build()
+
         generateNode.addChild(genTypeNode)
         // /task generate *type* player
         val getPlayerTargetNode = CommandManager
@@ -83,12 +87,15 @@ object TaskCommand {
         val genTargetNode = CommandManager
             .argument("target", EntityArgumentType.players())
             .executes {
-                generate(
-                    it, TaskArgumentType.getTaskType(it, "type"),
-                    EntityArgumentType.getOptionalPlayers(it, "target")
-                )
+                threaded {
+                    generate(
+                        it, TaskArgumentType.getTaskType(it, "type"),
+                        EntityArgumentType.getOptionalPlayers(it, "target")
+                    )
+                }
             }
             .build()
+
         getPlayerTargetNode.addChild(genTargetNode)
         // /task generate *type* location
         val getLocationTargetNode = CommandManager
@@ -99,10 +106,12 @@ object TaskCommand {
         val genTarget2Node = CommandManager
             .argument("target", BlockPosArgumentType.blockPos())
             .executes {
-                generateLocation(
-                    it, TaskArgumentType.getTaskType(it, "type"),
-                    BlockPosArgumentType.getBlockPos(it, "target")
-                )
+                threaded {
+                    generateLocation(
+                        it, TaskArgumentType.getTaskType(it, "type"),
+                        BlockPosArgumentType.getBlockPos(it, "target")
+                    )
+                }
             }
             .build()
         getLocationTargetNode.addChild(genTarget2Node)
@@ -111,13 +120,13 @@ object TaskCommand {
         // /task list
         val listNode = CommandManager
             .literal("list")
-            .executes { list(it, null) }
+            .executes { threaded { list(it, null) } }
             .build()
         taskNode.addChild(listNode)
         // /task list *type*
         val listTypeArgNode = CommandManager
             .argument("type", TaskArgumentType())
-            .executes { list(it, TaskArgumentType.getTaskType(it, "type")) }
+            .executes { threaded { list(it, TaskArgumentType.getTaskType(it, "type")) } }
             .build()
         listNode.addChild(listTypeArgNode)
 
@@ -130,7 +139,7 @@ object TaskCommand {
         // /task get *id*
         val getIdArgNode = CommandManager
             .argument("id", IntegerArgumentType.integer(1))
-            .executes { getTask(it, IntegerArgumentType.getInteger(it, "id")) }
+            .executes { threaded { getTask(it, IntegerArgumentType.getInteger(it, "id")) } }
             .build()
         getNode.addChild(getIdArgNode)
 
@@ -143,27 +152,29 @@ object TaskCommand {
         // /task delete *id*
         val deleteIdArgNode = CommandManager
             .argument("id", IntegerArgumentType.integer(1))
-            .executes { deleteTask(it, IntegerArgumentType.getInteger(it, "id")) }
+            .executes { threaded { deleteTask(it, IntegerArgumentType.getInteger(it, "id")) } }
             .build()
         deleteNode.addChild(deleteIdArgNode)
+
 
         // /task export
         val exportNode = CommandManager
             .literal("export")
-            .executes { export(it) }
+            .executes { threaded { export(it) } }
             .build()
         taskNode.addChild(exportNode)
+
 
         // /task import
         val importNode = CommandManager
             .literal("import")
-            .executes { import(it, false) }
+            .executes { threaded { import(it, false) } }
             .build()
         taskNode.addChild(importNode)
         // /task import *with_times_used*
         val importTimesArgNode = CommandManager
             .argument("with_times_used", BoolArgumentType.bool())
-            .executes { import(it, BoolArgumentType.getBool(it, "with_times_used")) }
+            .executes { threaded { import(it, BoolArgumentType.getBool(it, "with_times_used")) } }
             .build()
         importNode.addChild(importTimesArgNode)
 
@@ -171,13 +182,13 @@ object TaskCommand {
         // /task delete_all
         val deleteAllNode = CommandManager
             .literal("delete_all")
-            .executes { deleteAll(it, true) }
+            .executes { threaded { deleteAll(it, true) } }
             .build()
         taskNode.addChild(deleteAllNode)
         // /task delete_all *backup*
         val deleteAllBackupArgNode = CommandManager
             .argument("backup", BoolArgumentType.bool())
-            .executes { deleteAll(it, BoolArgumentType.getBool(it, "backup")) }
+            .executes { threaded { deleteAll(it, BoolArgumentType.getBool(it, "backup")) } }
             .build()
         deleteAllNode.addChild(deleteAllBackupArgNode)
 
@@ -196,16 +207,28 @@ object TaskCommand {
         // /task players add *player*
         val playerListAddArgNode = CommandManager
             .argument("player", GameProfileArgumentType.gameProfile())
-            .executes { addPlayers(it, GameProfileArgumentType.getProfileArgument(it, "player")) }
+            .executes { threaded { addPlayers(it, GameProfileArgumentType.getProfileArgument(it, "player")) } }
             .build()
         playerListAddNode.addChild(playerListAddArgNode)
 
         // /task players list
         val playerListNode = CommandManager
             .literal("list")
-            .executes { listPlayers(it) }
+            .executes { threaded { listPlayers(it) } }
             .build()
         playersNode.addChild(playerListNode)
+
+        // /task players remove
+        val playerListRemoveNode = CommandManager
+            .literal("remove")
+            .build()
+        playersNode.addChild(playerListRemoveNode)
+        // /task players remove *player*
+        val playerListRemoveArgNode = CommandManager
+            .argument("player", GameProfileArgumentType.gameProfile())
+            .executes { threaded { removePlayers(it, GameProfileArgumentType.getProfileArgument(it, "player")) } }
+            .build()
+        playerListRemoveNode.addChild(playerListRemoveArgNode)
     }
 
     private fun add(context: CommandContext<ServerCommandSource>): Int {
@@ -259,52 +282,40 @@ object TaskCommand {
 
     private fun genBook(iData: String, type: TaskType, world: ServerWorld, pos: Vec3d, src: ServerCommandSource) {
         var data = iData
-        println("BookGen-DEBUG")
-        val percent = Regex("\\[%:\\d{1,2}:((100)|(\\d{1,2}))]")
-        val time = Regex("\\[t:([1-5]?[0-9]):([1-5]?[0-9]|60):[smhd]]")
-        val dataCleaner = Regex("(\\[((%)|(t)):)|]")
+        try {
+            if (data.contains("[")) {
+                val number = Regex("\\[n:\\d*:\\d*]")
+                val dataCleaner = Regex("(\\[n:)|]")
 
-        if (data.contains("[")) {
-            while (data.contains("[p]")) {
-                data = data.replaceFirst("[p]", "ENDER_END")
-            }
+                while (data.contains("[p]")) {
+                    val result = TaskDatabaseManager.getPlayer(true)
+                    if (src.couldError(result.second)) return
 
-            if (data.contains("[%")) {
-                val inputs = percent.findAll(data).map { x ->
-                    val procData = x.value.replace(dataCleaner, "").split(":").map { it.toInt() }
-                    if (procData[0] > procData[1]) {
-                        val err = "Wrong input Percent Template for [$data]"
-                        src.error(err)
-                        throw Error(err)
-                    }
-                    "${Random.nextInt(procData[0], procData[1] + 1)}%"
-                }.toList()
-                data = percent.split(data)
-                    .reduceIndexed { idx, acc, s -> "$acc${if (idx - 1 < inputs.size) inputs[idx - 1] else ""}$s" }
-            }
+                    val player = src.server.userCache?.getByUuid(UUID.fromString(result.first))?.get()?.name
 
-            if (data.contains("[t")) {
-                val inputs = time.findAll(data).map {
-                    val procData = it.value.replace(dataCleaner, "").split(":")
-                    if (procData[0].toInt() > procData[1].toInt()) {
-                        val err = "Wrong input Time Template for [$data]"
-                        src.error(err)
-                        throw Error(err)
-                    }
-                    val x = when (procData[2]) {
-                        "s" -> "seconds"
-                        "m" -> "minutes"
-                        "h" -> "hours"
-                        "d" -> "days"
-                        else -> throw Error("Time regex failed and caught and extra value or didn't catch one at all!")
-                    }
-                    "${Random.nextInt(procData[0].toInt(), procData[1].toInt() + 1)} $x"
-                }.toList()
-                data = time.split(data)
-                    .reduceIndexed { idx, acc, s -> "$acc${if (idx - 1 < inputs.size) inputs[idx - 1] else ""} $s" }
+                    data = data.replaceFirst("[p]", player ?: "[Player Not Found]")
+                }
+
+
+                if (data.contains("[n:")) {
+                    val inputs = number.findAll(data).map { x ->
+                        val procData = x.value.replace(dataCleaner, "").split(":").map { it.toInt() }
+                        println(procData)
+                        if (procData[0] > procData[1]) {
+                            val err = "Wrong input for Number Template for entry [$data]"
+                            src.error(err)
+                            throw Error(err)
+                        }
+                        "${Random.nextInt(procData[0], procData[1] + 1)}"
+                    }.toList()
+                    data = number.split(data)
+                        .reduceIndexed { idx, acc, s -> "$acc${if (idx - 1 < inputs.size) inputs[idx - 1] else ""}$s" }
+                }
             }
+        } catch (e: NumberFormatException){
+            e.message?.let { src.error(it) }
+            throw e
         }
-
 
         val book = Items.WRITTEN_BOOK.defaultStack
         book.setSubNbt("author", NbtString.of("The Task Master"))
@@ -313,7 +324,7 @@ object TaskCommand {
         list.add(NbtString.of(Text.Serializer.toJson(Text.literal(data))))
         book.setSubNbt("pages", list)
         val bookEntity = ItemEntity(world, pos.x, pos.y, pos.z, book)
-        bookEntity.setVelocity(0.0, -0.1, 0.0)
+        bookEntity.setVelocity(0.0, 0.0, 0.0)
         world.spawnEntity(bookEntity)
     }
 
@@ -419,18 +430,29 @@ object TaskCommand {
         return output.second
     }
 
-    private fun listPlayers(context: CommandContext<ServerCommandSource> ): Int {
+    private fun removePlayers(context: CommandContext<ServerCommandSource>, players: Collection<GameProfile>): Int {
+        val source = context.source
+        var i = 0
+        for (player in players) {
+            val error = TaskDatabaseManager.deleteOnePlayer(player.id.toString())
+            if (source.couldError(error)) return 0
+            source.msg("${player.name} removed!")
+            ++i
+        }
+        if (i == 0) source.error("No such player!")
+        return i
+    }
+
+    private fun listPlayers(context: CommandContext<ServerCommandSource>): Int {
         val source = context.source
         val result = TaskDatabaseManager.getAllPlayers()
         if (source.couldError(result.second)) return 0
 
         val data = result.first!!
-//        GameProfile()
-       val pm = source.server.userCache
-        data.forEach { source.msg("[${it.first}] - ${ pm?.getByUuid(UUID.fromString(it.second))?.get()?.name}") }
+        val pm = source.server.userCache
+        data.forEach { source.msg("[${it.first}] - ${pm?.getByUuid(UUID.fromString(it.second))?.get()?.name}") }
         return 1
     }
-
 
     private fun exportToFile(src: ServerCommandSource, fileName: String): Boolean {
         val result = TaskDatabaseManager.getAll(null)
@@ -453,10 +475,15 @@ object TaskCommand {
     private fun String.cap(): String = this.replaceFirstChar { it.uppercaseChar() }
     private fun ServerCommandSource.error(str: String) = this.sError("Error : $str")
     private fun ServerCommandSource.sError(str: String) = this.sendError(Text.literal(str))
-    private fun ServerCommandSource.msg(str: String) = this.sendSystemMessage(Text.literal(str))
+    private fun ServerCommandSource.msg(str: String) = this.sendFeedback({ Text.literal(str) }, false)
 
     private fun ServerCommandSource.couldError(error: Optional<String>) =
         if (error.isPresent) {
             this.error(error.get()); true
         } else false
+
+    private fun threaded(callback: Supplier<Int>): Int {
+        Thread { callback.get() }.start()
+        return 0
+    }
 }

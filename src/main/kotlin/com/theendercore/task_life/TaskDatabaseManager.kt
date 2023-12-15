@@ -62,14 +62,51 @@ object TaskDatabaseManager {
 
                 }
                 if (taskList.isNotEmpty()) {
-                    taskList = taskList.filter { task -> (min == max) || task.timesUsed == min }
-                        .toMutableList()
-                    taskList.shuffle()
-                    val task = taskList[0]
+                    taskList = taskList.filter { task -> (min == max) || task.timesUsed == min }.toMutableList()
+                    val task = taskList.random()
                     value = task.data
 
                     if (shouldIncrement)
                         it.executeUpdate("update tasks set times_used=${task.timesUsed + 1} where id=${task.id}")
+                }
+
+            }
+        } catch (e: Error) {
+            LOG.error(e.toString())
+            return Pair(null, Optional.of(e.toString()))
+        }
+        return if (value == "") Pair(null, Optional.of("No Tasks"))
+        else return Pair(value, Optional.empty())
+    }
+
+
+    fun getPlayer(shouldIncrement: Boolean): Pair<String?, Optional<String>> {
+        var value = ""
+        try {
+            connect { st ->
+                val result: ResultSet = st.executeQuery("select * from players")
+                var players = mutableListOf<Triple<String, Int, Int>>()
+                var max = 0
+                var min = 0
+                var x = true
+                while (result.next()) {
+                    val timesUsed = result.getInt("times_used")
+                    players.add(Triple(result.getString("uuid"), timesUsed, result.getInt("id")))
+                    if (x) {
+                        min = timesUsed
+                        x = false
+                    }
+                    if (timesUsed < min) min = timesUsed
+                    if (timesUsed > max) max = timesUsed
+
+                }
+                if (players.isNotEmpty()) {
+                    players = players.filter { (min == max) || it.second == min }.toMutableList()
+                    val task = players.random()
+                    value = task.first
+
+                    if (shouldIncrement)
+                        st.executeUpdate("update players set times_used=${task.second + 1} where id=${task.third}")
                 }
 
             }
@@ -148,6 +185,18 @@ object TaskDatabaseManager {
             return Optional.of(e.toString())
         }
         return Optional.ofNullable(if (success == 0) "Task [$id] doesn't exists!" else null)
+    }
+
+    fun deleteOnePlayer(uuid: String): Optional<String> {
+        var success = 1
+        try {
+            println(uuid)
+            connect { success = it.executeUpdate("delete from players where uuid='$uuid'") }
+        } catch (e: Error) {
+            LOG.error(e.toString())
+            return Optional.of(e.toString())
+        }
+        return Optional.ofNullable(if (success == 0) "Player [$uuid] doesn't exists!" else null)
     }
 
     fun deleteAll(): Optional<String> {
