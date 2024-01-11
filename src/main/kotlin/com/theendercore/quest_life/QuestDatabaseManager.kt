@@ -1,28 +1,28 @@
-package com.theendercore.task_life
+package com.theendercore.quest_life
 
-import com.theendercore.task_life.TaskLife.LOG
-import com.theendercore.task_life.TaskLife.ModDir
-import com.theendercore.task_life.commands.TaskType
+import com.theendercore.quest_life.QuestLife.ModDir
+import com.theendercore.quest_life.QuestLife.log
+import com.theendercore.quest_life.commands.QuestType
 import java.nio.file.Paths
 import java.sql.*
 import java.util.*
 
 
-object TaskDatabaseManager {
-    private val DB_PATH: String = Paths.get(ModDir, "task_data.db").toString()
+object QuestDatabaseManager {
+    private val DB_PATH: String = Paths.get(ModDir, "quest_data.db").toString()
 
     fun init() {
         connect {
-            it.executeUpdate("create table if not exists tasks (id integer primary key, type string, data string, times_used integer)")
+            it.executeUpdate("create table if not exists quests (id integer primary key, type string, data string, times_used integer)")
             it.executeUpdate("create table if not exists players (id integer primary key, uuid string, times_used integer)")
         }
     }
 
-    fun add(type: TaskType, task: String, timesUsed: String? = null): Optional<String> {
+    fun add(type: QuestType, quest: String, timesUsed: String? = null): Optional<String> {
         try {
-            connect { it.executeUpdate("insert into tasks values(null, '$type', '$task', ${timesUsed ?: "0"})") }
+            connect { it.executeUpdate("insert into quests values(null, '$type', '$quest', ${timesUsed ?: "0"})") }
         } catch (e: Error) {
-            LOG.error(e.toString())
+            log.error(e.toString())
             return Optional.of(e.toString())
         }
         return Optional.empty()
@@ -32,27 +32,27 @@ object TaskDatabaseManager {
         try {
             connect { it.executeUpdate("insert into players values(null, '$uuid', ${timesUsed ?: "0"})") }
         } catch (e: Error) {
-            LOG.error(e.toString())
+            log.error(e.toString())
             return Optional.of(e.toString())
         }
         return Optional.empty()
     }
 
-    fun get(type: TaskType, shouldIncrement: Boolean): Pair<String?, Optional<String>> {
+    fun get(type: QuestType, shouldIncrement: Boolean): Pair<String?, Optional<String>> {
         var value = ""
         try {
-            connect {
-                val result: ResultSet = it.executeQuery("select * from tasks where type='$type'")
-                var taskList = mutableListOf<QueryTask>()
+            connect { stmt ->
+                val result: ResultSet = stmt.executeQuery("select * from quests where type='$type'")
+                var questList = mutableListOf<QueryQuest>()
                 var max = 0
                 var min = 0
                 var x = true
                 while (result.next()) {
                     val id = result.getInt("id")
-                    val type1 = TaskType.valueOf(result.getString("type"))
+                    val type1 = QuestType.valueOf(result.getString("type"))
                     val data = result.getString("data")
                     val timesUsed = result.getInt("times_used")
-                    taskList.add(QueryTask(id, type1, data, timesUsed))
+                    questList.add(QueryQuest(id, type1, data, timesUsed))
                     if (x) {
                         min = timesUsed
                         x = false
@@ -61,21 +61,21 @@ object TaskDatabaseManager {
                     if (timesUsed > max) max = timesUsed
 
                 }
-                if (taskList.isNotEmpty()) {
-                    taskList = taskList.filter { task -> (min == max) || task.timesUsed == min }.toMutableList()
-                    val task = taskList.random()
-                    value = task.data
+                if (questList.isNotEmpty()) {
+                    questList = questList.filter { (min == max) || it.timesUsed == min }.toMutableList()
+                    val quest = questList.random()
+                    value = quest.data
 
                     if (shouldIncrement)
-                        it.executeUpdate("update tasks set times_used=${task.timesUsed + 1} where id=${task.id}")
+                        stmt.executeUpdate("update quests set times_used=${quest.timesUsed + 1} where id=${quest.id}")
                 }
 
             }
         } catch (e: Error) {
-            LOG.error(e.toString())
+            log.error(e.toString())
             return Pair(null, Optional.of(e.toString()))
         }
-        return if (value == "") Pair(null, Optional.of("No Tasks"))
+        return if (value == "") Pair(null, Optional.of("No Quests"))
         else return Pair(value, Optional.empty())
     }
 
@@ -102,42 +102,42 @@ object TaskDatabaseManager {
                 }
                 if (players.isNotEmpty()) {
                     players = players.filter { (min == max) || it.second == min }.toMutableList()
-                    val task = players.random()
-                    value = task.first
+                    val quest = players.random()
+                    value = quest.first
 
                     if (shouldIncrement)
-                        st.executeUpdate("update players set times_used=${task.second + 1} where id=${task.third}")
+                        st.executeUpdate("update players set times_used=${quest.second + 1} where id=${quest.third}")
                 }
 
             }
         } catch (e: Error) {
-            LOG.error(e.toString())
+            log.error(e.toString())
             return Pair(null, Optional.of(e.toString()))
         }
-        return if (value == "") Pair(null, Optional.of("No Tasks"))
+        return if (value == "") Pair(null, Optional.of("No Quests"))
         else return Pair(value, Optional.empty())
     }
 
-    fun getAll(type: TaskType?): Pair<List<QueryTask>?, Optional<String>> {
-        val value = mutableListOf<QueryTask>()
+    fun getAll(type: QuestType?): Pair<List<QueryQuest>?, Optional<String>> {
+        val value = mutableListOf<QueryQuest>()
         try {
             connect {
                 val result: ResultSet =
-                    it.executeQuery("select * from tasks ${if (type != null) "where type='$type'" else ""}")
+                    it.executeQuery("select * from quests ${if (type != null) "where type='$type'" else ""}")
                 while (result.next()) {
                     value.add(
-                        QueryTask(
-                            result.getInt("id"), TaskType.valueOf(result.getString("type")),
+                        QueryQuest(
+                            result.getInt("id"), QuestType.valueOf(result.getString("type")),
                             result.getString("data"), result.getInt("times_used")
                         )
                     )
                 }
             }
         } catch (e: Error) {
-            LOG.error(e.toString())
+            log.error(e.toString())
             return Pair(null, Optional.of(e.toString()))
         }
-        return if (value.isEmpty()) Pair(null, Optional.of("No Tasks"))
+        return if (value.isEmpty()) Pair(null, Optional.of("No Quests"))
         else Pair(value, Optional.empty())
     }
 
@@ -150,7 +150,7 @@ object TaskDatabaseManager {
                     value.add(Pair(result.getInt("id"), result.getString("uuid")))
             }
         } catch (e: Error) {
-            LOG.error(e.toString())
+            log.error(e.toString())
             return Pair(null, Optional.of(e.toString()))
         }
         return if (value.isEmpty()) Pair(null, Optional.of("No Players"))
@@ -161,30 +161,30 @@ object TaskDatabaseManager {
         var value = ""
         try {
             connect {
-                val result: ResultSet = it.executeQuery("select * from tasks where id=$id")
+                val result: ResultSet = it.executeQuery("select * from quests where id=$id")
                 while (result.next()) {
-                    value += "(Type=${TaskType.valueOf(result.getString("type"))}, " +
+                    value += "(Type=${QuestType.valueOf(result.getString("type"))}, " +
                             "TimesUsed=${result.getInt("times_used")}, " +
-                            "Task=${result.getString("data")})"
+                            "Quest=${result.getString("data")})"
                 }
             }
         } catch (e: Error) {
-            LOG.error(e.toString())
+            log.error(e.toString())
             return Pair(null, Optional.of(e.toString()))
         }
-        return if (value == "") Pair(null, Optional.of("Could not find Task [$id]"))
+        return if (value == "") Pair(null, Optional.of("Could not find Quest [$id]"))
         else return Pair(value, Optional.empty())
     }
 
     fun deleteOne(id: Int): Optional<String> {
         var success = 1
         try {
-            connect { success = it.executeUpdate("delete from tasks where id=$id") }
+            connect { success = it.executeUpdate("delete from quests where id=$id") }
         } catch (e: Error) {
-            LOG.error(e.toString())
+            log.error(e.toString())
             return Optional.of(e.toString())
         }
-        return Optional.ofNullable(if (success == 0) "Task [$id] doesn't exists!" else null)
+        return Optional.ofNullable(if (success == 0) "Quest [$id] doesn't exists!" else null)
     }
 
     fun deleteOnePlayer(uuid: String): Optional<String> {
@@ -193,7 +193,7 @@ object TaskDatabaseManager {
             println(uuid)
             connect { success = it.executeUpdate("delete from players where uuid='$uuid'") }
         } catch (e: Error) {
-            LOG.error(e.toString())
+            log.error(e.toString())
             return Optional.of(e.toString())
         }
         return Optional.ofNullable(if (success == 0) "Player [$uuid] doesn't exists!" else null)
@@ -202,12 +202,12 @@ object TaskDatabaseManager {
     fun deleteAll(): Optional<String> {
         var success = 1
         try {
-            connect { success = it.executeUpdate("delete from task") }
+            connect { success = it.executeUpdate("delete from quests") }
         } catch (e: Error) {
-            LOG.error(e.toString())
+            log.error(e.toString())
             return Optional.of(e.toString())
         }
-        return Optional.ofNullable(if (success == 0) "No tasks exists!" else null)
+        return Optional.ofNullable(if (success == 0) "No quests exists!" else null)
     }
 
     private fun connect(callback: (statement: Statement) -> Unit) {
@@ -218,17 +218,17 @@ object TaskDatabaseManager {
             statement.queryTimeout = 30
             callback(statement)
         } catch (e: SQLException) {
-            LOG.error("[Connect Error] $e")
+            log.error("[Connect Error] $e")
         } finally {
             try {
                 connection?.close()
             } catch (e: SQLException) {
-                LOG.error("[Close Error] $e")
+                log.error("[Close Error] $e")
             }
         }
     }
 
-    data class QueryTask(val id: Int, val type: TaskType, val data: String, val timesUsed: Int) {
+    data class QueryQuest(val id: Int, val type: QuestType, val data: String, val timesUsed: Int) {
         fun toCsvString(): String = "$type,$data,$timesUsed"
     }
 }

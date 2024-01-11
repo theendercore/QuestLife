@@ -9,5 +9,5 @@ pluginManagement {
     }
 }
 
-rootProject.name = "TaskLife"
+rootProject.name = "QuestLife"
 

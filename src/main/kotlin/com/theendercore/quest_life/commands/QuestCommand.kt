@@ -1,4 +1,4 @@
-package com.theendercore.task_life.commands
+package com.theendercore.quest_life.commands
 
 import com.google.common.base.Supplier
 import com.mojang.authlib.GameProfile
@@ -6,8 +6,9 @@ import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.BoolArgumentType
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.context.CommandContext
-import com.theendercore.task_life.TaskDatabaseManager
-import com.theendercore.task_life.TaskLife.ModDir
+import com.theendercore.quest_life.QuestDatabaseManager
+import com.theendercore.quest_life.QuestLife.ModDir
+import com.theendercore.quest_life.config.QuestConfig
 import net.minecraft.command.CommandBuildContext
 import net.minecraft.command.argument.BlockPosArgumentType
 import net.minecraft.command.argument.EntityArgumentType
@@ -33,63 +34,63 @@ import java.util.*
 import kotlin.random.Random
 
 
-object TaskCommand {
+object QuestCommand {
     @Suppress("UNUSED_PARAMETER")
     fun register(
         dispatcher: CommandDispatcher<ServerCommandSource>, context: CommandBuildContext,
         env: CommandManager.RegistrationEnvironment
     ) {
 
-        // /task
-        val taskNode = CommandManager
-            .literal("task")
+        // /quest
+        val questNode = CommandManager
+            .literal("quest")
             .requires { it.hasPermissionLevel(2) }
             .build()
-        dispatcher.root.addChild(taskNode)
+        dispatcher.root.addChild(questNode)
 
 
-        // /task add
+        // /quest add
         val addNode = CommandManager
             .literal("add")
             .build()
-        taskNode.addChild(addNode)
-        // /task add *type*
+        questNode.addChild(addNode)
+        // /quest add *type*
         val addTypeNode = CommandManager
-            .argument("type", TaskArgumentType())
+            .argument("type", QuestArgumentType())
             .build()
         addNode.addChild(addTypeNode)
-        // /task add *type* *task*
-        val addTaskNode = CommandManager
-            .argument("task", MessageArgumentType.message())
+        // /quest add *type* *quest*
+        val addQuestNode = CommandManager
+            .argument("quest", MessageArgumentType.message())
             .executes { threaded{ add(it) }}
             .build()
-        addTypeNode.addChild(addTaskNode)
+        addTypeNode.addChild(addQuestNode)
 
 
-        // /task generate
+        // /quest generate
         val generateNode = CommandManager
             .literal("generate")
             .build()
-        taskNode.addChild(generateNode)
-        // /task generate *type*
+        questNode.addChild(generateNode)
+        // /quest generate *type*
         val genTypeNode = CommandManager
-            .argument("type", TaskArgumentType())
-            .executes { threaded{ generate(it, TaskArgumentType.getTaskType(it, "type"), null) } }
+            .argument("type", QuestArgumentType())
+            .executes { threaded{ generate(it, QuestArgumentType.getQuestType(it, "type"), null) } }
             .build()
 
         generateNode.addChild(genTypeNode)
-        // /task generate *type* player
+        // /quest generate *type* player
         val getPlayerTargetNode = CommandManager
             .literal("player")
             .build()
         genTypeNode.addChild(getPlayerTargetNode)
-        // /task generate *type* player *target*
+        // /quest generate *type* player *target*
         val genTargetNode = CommandManager
             .argument("target", EntityArgumentType.players())
             .executes {
                 threaded {
                     generate(
-                        it, TaskArgumentType.getTaskType(it, "type"),
+                        it, QuestArgumentType.getQuestType(it, "type"),
                         EntityArgumentType.getOptionalPlayers(it, "target")
                     )
                 }
@@ -97,18 +98,18 @@ object TaskCommand {
             .build()
 
         getPlayerTargetNode.addChild(genTargetNode)
-        // /task generate *type* location
+        // /quest generate *type* location
         val getLocationTargetNode = CommandManager
             .literal("location")
             .build()
         genTypeNode.addChild(getLocationTargetNode)
-        // /task generate *type* location *target*
+        // /quest generate *type* location *target*
         val genTarget2Node = CommandManager
             .argument("target", BlockPosArgumentType.blockPos())
             .executes {
                 threaded {
                     generateLocation(
-                        it, TaskArgumentType.getTaskType(it, "type"),
+                        it, QuestArgumentType.getQuestType(it, "type"),
                         BlockPosArgumentType.getBlockPos(it, "target")
                     )
                 }
@@ -117,61 +118,61 @@ object TaskCommand {
         getLocationTargetNode.addChild(genTarget2Node)
 
 
-        // /task list
+        // /quest list
         val listNode = CommandManager
             .literal("list")
             .executes { threaded { list(it, null) } }
             .build()
-        taskNode.addChild(listNode)
-        // /task list *type*
+        questNode.addChild(listNode)
+        // /quest list *type*
         val listTypeArgNode = CommandManager
-            .argument("type", TaskArgumentType())
-            .executes { threaded { list(it, TaskArgumentType.getTaskType(it, "type")) } }
+            .argument("type", QuestArgumentType())
+            .executes { threaded { list(it, QuestArgumentType.getQuestType(it, "type")) } }
             .build()
         listNode.addChild(listTypeArgNode)
 
 
-        // /task get
+        // /quest get
         val getNode = CommandManager
             .literal("get")
             .build()
-        taskNode.addChild(getNode)
-        // /task get *id*
+        questNode.addChild(getNode)
+        // /quest get *id*
         val getIdArgNode = CommandManager
             .argument("id", IntegerArgumentType.integer(1))
-            .executes { threaded { getTask(it, IntegerArgumentType.getInteger(it, "id")) } }
+            .executes { threaded { getQuest(it, IntegerArgumentType.getInteger(it, "id")) } }
             .build()
         getNode.addChild(getIdArgNode)
 
 
-        // /task delete
+        // /quest delete
         val deleteNode = CommandManager
             .literal("delete")
             .build()
-        taskNode.addChild(deleteNode)
-        // /task delete *id*
+        questNode.addChild(deleteNode)
+        // /quest delete *id*
         val deleteIdArgNode = CommandManager
             .argument("id", IntegerArgumentType.integer(1))
-            .executes { threaded { deleteTask(it, IntegerArgumentType.getInteger(it, "id")) } }
+            .executes { threaded { deleteQuest(it, IntegerArgumentType.getInteger(it, "id")) } }
             .build()
         deleteNode.addChild(deleteIdArgNode)
 
 
-        // /task export
+        // /quest export
         val exportNode = CommandManager
             .literal("export")
             .executes { threaded { export(it) } }
             .build()
-        taskNode.addChild(exportNode)
+        questNode.addChild(exportNode)
 
 
-        // /task import
+        // /quest import
         val importNode = CommandManager
             .literal("import")
             .executes { threaded { import(it, false) } }
             .build()
-        taskNode.addChild(importNode)
-        // /task import *with_times_used*
+        questNode.addChild(importNode)
+        // /quest import *with_times_used*
         val importTimesArgNode = CommandManager
             .argument("with_times_used", BoolArgumentType.bool())
             .executes { threaded { import(it, BoolArgumentType.getBool(it, "with_times_used")) } }
@@ -179,13 +180,13 @@ object TaskCommand {
         importNode.addChild(importTimesArgNode)
 
 
-        // /task delete_all
+        // /quest delete_all
         val deleteAllNode = CommandManager
             .literal("delete_all")
             .executes { threaded { deleteAll(it, true) } }
             .build()
-        taskNode.addChild(deleteAllNode)
-        // /task delete_all *backup*
+        questNode.addChild(deleteAllNode)
+        // /quest delete_all *backup*
         val deleteAllBackupArgNode = CommandManager
             .argument("backup", BoolArgumentType.bool())
             .executes { threaded { deleteAll(it, BoolArgumentType.getBool(it, "backup")) } }
@@ -193,37 +194,37 @@ object TaskCommand {
         deleteAllNode.addChild(deleteAllBackupArgNode)
 
 
-        // /task players
+        // /quest players
         val playersNode = CommandManager
             .literal("players")
             .build()
-        taskNode.addChild(playersNode)
+        questNode.addChild(playersNode)
 
-        // /task players add
+        // /quest players add
         val playerListAddNode = CommandManager
             .literal("add")
             .build()
         playersNode.addChild(playerListAddNode)
-        // /task players add *player*
+        // /quest players add *player*
         val playerListAddArgNode = CommandManager
             .argument("player", GameProfileArgumentType.gameProfile())
             .executes { threaded { addPlayers(it, GameProfileArgumentType.getProfileArgument(it, "player")) } }
             .build()
         playerListAddNode.addChild(playerListAddArgNode)
 
-        // /task players list
+        // /quest players list
         val playerListNode = CommandManager
             .literal("list")
             .executes { threaded { listPlayers(it) } }
             .build()
         playersNode.addChild(playerListNode)
 
-        // /task players remove
+        // /quest players remove
         val playerListRemoveNode = CommandManager
             .literal("remove")
             .build()
         playersNode.addChild(playerListRemoveNode)
-        // /task players remove *player*
+        // /quest players remove *player*
         val playerListRemoveArgNode = CommandManager
             .argument("player", GameProfileArgumentType.gameProfile())
             .executes { threaded { removePlayers(it, GameProfileArgumentType.getProfileArgument(it, "player")) } }
@@ -233,21 +234,21 @@ object TaskCommand {
 
     private fun add(context: CommandContext<ServerCommandSource>): Int {
         val source = context.source
-        val type = TaskArgumentType.getTaskType(context, "type")
-        val task = MessageArgumentType.getMessage(context, "task").string
-        if (source.couldError(TaskDatabaseManager.add(type, task))) return 0
+        val type = QuestArgumentType.getQuestType(context, "type")
+        val quest = MessageArgumentType.getMessage(context, "quest").string
+        if (source.couldError(QuestDatabaseManager.add(type, quest))) return 0
 
-        source.msg("New $type task added!")
+        source.msg("New $type quest added!")
         return 1
     }
 
     private fun generate(
-        context: CommandContext<ServerCommandSource>, type: TaskType, inPlayers: Collection<ServerPlayerEntity>?
+        context: CommandContext<ServerCommandSource>, type: QuestType, inPlayers: Collection<ServerPlayerEntity>?
     ): Int {
         val source = context.source
         var players = inPlayers
         var outInt = players?.size
-        var output = "Generated $type Tasks for $outInt players!"
+        var output = "Generated $type Quests for $outInt players!"
         if (inPlayers == null) {
             val player = source.player
             if (player == null) {
@@ -255,12 +256,12 @@ object TaskCommand {
                 return 0
             }
             players = listOf(player)
-            output = "Generated $type Task!"
+            output = "Generated $type Quest!"
             outInt = 1
         }
 
         players!!.forEach { player ->
-            val result = TaskDatabaseManager.get(type, true)
+            val result = QuestDatabaseManager.get(type, true)
             if (source.couldError(result.second)) return@generate 0
 
             genBook(result.first!!, type, source.world, Vec3d(player.x, player.y, player.z), source)
@@ -270,17 +271,17 @@ object TaskCommand {
         return outInt!!
     }
 
-    private fun generateLocation(context: CommandContext<ServerCommandSource>, type: TaskType, pos: BlockPos): Int {
+    private fun generateLocation(context: CommandContext<ServerCommandSource>, type: QuestType, pos: BlockPos): Int {
         val source = context.source
-        val result = TaskDatabaseManager.get(type, true)
+        val result = QuestDatabaseManager.get(type, true)
         if (source.couldError(result.second)) return 0
 
         genBook(result.first!!, type, source.world, pos.ofCenter(), source)
-        source.msg("Task spawned at ${pos.x} ${pos.y} ${pos.z}")
+        source.msg("Quest spawned at ${pos.x} ${pos.y} ${pos.z}")
         return 1
     }
 
-    private fun genBook(iData: String, type: TaskType, world: ServerWorld, pos: Vec3d, src: ServerCommandSource) {
+    private fun genBook(iData: String, type: QuestType, world: ServerWorld, pos: Vec3d, src: ServerCommandSource) {
         var data = iData
         try {
             if (data.contains("[")) {
@@ -288,7 +289,7 @@ object TaskCommand {
                 val dataCleaner = Regex("(\\[n:)|]")
 
                 while (data.contains("[p]")) {
-                    val result = TaskDatabaseManager.getPlayer(true)
+                    val result = QuestDatabaseManager.getPlayer(true)
                     if (src.couldError(result.second)) return
 
                     val player = src.server.userCache?.getByUuid(UUID.fromString(result.first))?.get()?.name
@@ -318,8 +319,8 @@ object TaskCommand {
         }
 
         val book = Items.WRITTEN_BOOK.defaultStack
-        book.setSubNbt("author", NbtString.of("The Task Master"))
-        book.setSubNbt("title", NbtString.of("$type Task"))
+        book.setSubNbt("author", NbtString.of(QuestConfig.data.bookAuthorName))
+        book.setSubNbt("title", NbtString.of("$type Quest"))
         val list = NbtList()
         list.add(NbtString.of(Text.Serializer.toJson(Text.literal(data))))
         book.setSubNbt("pages", list)
@@ -328,28 +329,28 @@ object TaskCommand {
         world.spawnEntity(bookEntity)
     }
 
-    private fun getTask(context: CommandContext<ServerCommandSource>, id: Int): Int {
+    private fun getQuest(context: CommandContext<ServerCommandSource>, id: Int): Int {
         val source = context.source
-        val result = TaskDatabaseManager.getOne(id)
+        val result = QuestDatabaseManager.getOne(id)
         if (source.couldError(result.second)) return 0
 
         val data = result.first!!
-        source.msg("Task [$id] - $data")
+        source.msg("Quest [$id] - $data")
         return 1
     }
 
-    private fun deleteTask(context: CommandContext<ServerCommandSource>, id: Int): Int {
+    private fun deleteQuest(context: CommandContext<ServerCommandSource>, id: Int): Int {
         val source = context.source
-        val error = TaskDatabaseManager.deleteOne(id)
+        val error = QuestDatabaseManager.deleteOne(id)
         if (source.couldError(error)) return 0
 
-        source.msg("Task [$id] deleted!")
+        source.msg("Quest [$id] deleted!")
         return 1
     }
 
-    private fun list(context: CommandContext<ServerCommandSource>, type: TaskType?): Int {
+    private fun list(context: CommandContext<ServerCommandSource>, type: QuestType?): Int {
         val source = context.source
-        val result = TaskDatabaseManager.getAll(type)
+        val result = QuestDatabaseManager.getAll(type)
         if (source.couldError(result.second)) return 0
 
         val data = result.first!!
@@ -359,16 +360,16 @@ object TaskCommand {
 
     private fun export(context: CommandContext<ServerCommandSource>): Int {
         val source = context.source
-        if (exportToFile(source, "tasks")) return 0
+        if (exportToFile(source, "quests")) return 0
 
-        source.msg("Tasks exported!")
+        source.msg("Quests exported!")
         return 1
     }
 
     private fun import(context: CommandContext<ServerCommandSource>, readTimesUsed: Boolean): Int {
         val source = context.source
-        var taskCount = 0
-        val file = Paths.get(ModDir, "tasks.csv").toFile()
+        var questCount = 0
+        val file = Paths.get(ModDir, "quests.csv").toFile()
         if (!file.exists()) {
             source.error("File doesn't exist!")
             return 0
@@ -380,33 +381,33 @@ object TaskCommand {
                     val slices = it.replace(Char(65279), Char(32)).split(",")
                     val type = slices[0].trim()
                     if (type == "" || type.lowercase() == "type") continue
-                    val task = slices[1].trim()
+                    val quest = slices[1].trim()
                     var count: String? = null
                     if (readTimesUsed) count = slices[2].trim()
-                    val error = TaskDatabaseManager.add(TaskType.valueOf(type.lowercase().cap()), task, count)
+                    val error = QuestDatabaseManager.add(QuestType.valueOf(type.lowercase().cap()), quest, count)
                     if (source.couldError(error)) return 0
 
-                    taskCount++
+                    questCount++
                 }
             }
         } catch (e: Error) {
             source.sendError(Text.literal("[Error While Importing] $e"))
             return 0
         }
-        source.msg("$taskCount Tasks imported!")
-        return taskCount
+        source.msg("$questCount Quests imported!")
+        return questCount
     }
 
     private fun deleteAll(context: CommandContext<ServerCommandSource>, makeBackup: Boolean): Int {
         val source = context.source
         if (makeBackup) {
-            if (exportToFile(source, "backup_tasks")) return 0
-            source.msg("Tasks backup successful!")
+            if (exportToFile(source, "backup_quests")) return 0
+            source.msg("Quests backup successful!")
         }
-        val error = TaskDatabaseManager.deleteAll()
+        val error = QuestDatabaseManager.deleteAll()
         if (source.couldError(error)) return 0
 
-        source.msg("All tasks deleted!")
+        source.msg("All quests deleted!")
         return 1
     }
 
@@ -416,7 +417,7 @@ object TaskCommand {
         var name = ""
         players.forEach {
             it.id
-            if (source.couldError(TaskDatabaseManager.addPlayer(it.id.toString())))
+            if (source.couldError(QuestDatabaseManager.addPlayer(it.id.toString())))
                 return@addPlayers 0
             count++
             name = it.name
@@ -434,7 +435,7 @@ object TaskCommand {
         val source = context.source
         var i = 0
         for (player in players) {
-            val error = TaskDatabaseManager.deleteOnePlayer(player.id.toString())
+            val error = QuestDatabaseManager.deleteOnePlayer(player.id.toString())
             if (source.couldError(error)) return 0
             source.msg("${player.name} removed!")
             ++i
@@ -445,7 +446,7 @@ object TaskCommand {
 
     private fun listPlayers(context: CommandContext<ServerCommandSource>): Int {
         val source = context.source
-        val result = TaskDatabaseManager.getAllPlayers()
+        val result = QuestDatabaseManager.getAllPlayers()
         if (source.couldError(result.second)) return 0
 
         val data = result.first!!
@@ -455,10 +456,10 @@ object TaskCommand {
     }
 
     private fun exportToFile(src: ServerCommandSource, fileName: String): Boolean {
-        val result = TaskDatabaseManager.getAll(null)
+        val result = QuestDatabaseManager.getAll(null)
         if (src.couldError(result.second)) return true
 
-        var fileContent = "TYPE,TASK,TIMES_USED\n"
+        var fileContent = "TYPE,QUEST,TIMES_USED\n"
         result.first!!.forEach { fileContent += it.toCsvString() + "\n" }
         try {
             val file = FileWriter(Paths.get(ModDir, "$fileName.csv").toFile())

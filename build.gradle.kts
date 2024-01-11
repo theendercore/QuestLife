@@ -10,7 +10,7 @@ plugins {
 group = project.properties["maven_group"]!!
 version = project.properties["mod_version"]!!
 base.archivesName.set(project.properties["archives_base_name"] as String)
-description = "Task Life is a mod thats inspired by Grians secret life series. Made for the Cornerstone version of it."
+description = "Quest Life is a mod thats inspired by Grians secret life series. Made for the Cornerstone version of it."
 val modid = project.properties["modid"]!! as String
 
 repositories {
@@ -22,10 +22,9 @@ repositories {
 
 modSettings {
     modId(modid)
-    modName("Task Life")
+    modName("Quest Life")
 
-    entrypoint("main", "com.theendercore.task_life.TaskLife::commonInit")
-//    entrypoint("client", "com.theendercore.task_life.TaskLife::clientInit")
+    entrypoint("main", "com.theendercore.quest_life.QuestLife::commonInit")
 }
 dependencies {
     modImplementation ("maven.modrinth:sqlite-jdbc:3.41.2.1+20230506")
