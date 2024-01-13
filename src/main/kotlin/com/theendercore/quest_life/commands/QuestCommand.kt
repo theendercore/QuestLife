@@ -8,6 +8,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.context.CommandContext
 import com.theendercore.quest_life.QuestDatabaseManager
 import com.theendercore.quest_life.QuestLife.ModDir
+import com.theendercore.quest_life.commands.QuestArgumentType.questTypeArg
 import com.theendercore.quest_life.config.QuestConfig
 import net.minecraft.command.CommandBuildContext
 import net.minecraft.command.argument.BlockPosArgumentType
@@ -19,6 +20,8 @@ import net.minecraft.item.Items
 import net.minecraft.nbt.NbtList
 import net.minecraft.nbt.NbtString
 import net.minecraft.server.command.CommandManager
+import net.minecraft.server.command.CommandManager.argument
+import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
@@ -42,51 +45,37 @@ object QuestCommand {
     ) {
 
         // /quest
-        val questNode = CommandManager
-            .literal("quest")
-            .requires { it.hasPermissionLevel(2) }
-            .build()
+        val questNode = literal("quest").requires { it.hasPermissionLevel(2) }.build()
         dispatcher.root.addChild(questNode)
 
 
         // /quest add
-        val addNode = CommandManager
-            .literal("add")
-            .build()
+        val addNode = literal("add").build()
         questNode.addChild(addNode)
         // /quest add *type*
-        val addTypeNode = CommandManager
-            .argument("type", QuestArgumentType())
-            .build()
+        val addTypeNode = questTypeArg("type").build()
         addNode.addChild(addTypeNode)
         // /quest add *type* *quest*
-        val addQuestNode = CommandManager
-            .argument("quest", MessageArgumentType.message())
-            .executes { threaded{ add(it) }}
+        val addQuestNode = argument("quest", MessageArgumentType.message())
+            .executes { threaded { add(it) } }
             .build()
         addTypeNode.addChild(addQuestNode)
 
 
         // /quest generate
-        val generateNode = CommandManager
-            .literal("generate")
-            .build()
+        val generateNode = literal("generate").build()
         questNode.addChild(generateNode)
         // /quest generate *type*
-        val genTypeNode = CommandManager
-            .argument("type", QuestArgumentType())
-            .executes { threaded{ generate(it, QuestArgumentType.getQuestType(it, "type"), null) } }
+        val genTypeNode = questTypeArg("type")
+            .executes { threaded { generate(it, QuestArgumentType.getQuestType(it, "type"), null) } }
             .build()
 
         generateNode.addChild(genTypeNode)
         // /quest generate *type* player
-        val getPlayerTargetNode = CommandManager
-            .literal("player")
-            .build()
+        val getPlayerTargetNode = literal("player").build()
         genTypeNode.addChild(getPlayerTargetNode)
         // /quest generate *type* player *target*
-        val genTargetNode = CommandManager
-            .argument("target", EntityArgumentType.players())
+        val genTargetNode = argument("target", EntityArgumentType.players())
             .executes {
                 threaded {
                     generate(
@@ -96,16 +85,26 @@ object QuestCommand {
                 }
             }
             .build()
-
         getPlayerTargetNode.addChild(genTargetNode)
-        // /quest generate *type* location
-        val getLocationTargetNode = CommandManager
-            .literal("location")
+        // /quest generate *type* player *target* *title*
+        val genTargetNodeTitleArg = argument("title", MessageArgumentType.message())
+            .executes {
+                threaded {
+                    generate(
+                        it, QuestArgumentType.getQuestType(it, "type"),
+                        EntityArgumentType.getOptionalPlayers(it, "target"),
+                        MessageArgumentType.getMessage(it,"title").string
+                    )
+                }
+            }
             .build()
+        genTargetNode.addChild(genTargetNodeTitleArg)
+
+        // /quest generate *type* location
+        val getLocationTargetNode = literal("location").build()
         genTypeNode.addChild(getLocationTargetNode)
         // /quest generate *type* location *target*
-        val genTarget2Node = CommandManager
-            .argument("target", BlockPosArgumentType.blockPos())
+        val genTarget2Node = argument("target", BlockPosArgumentType.blockPos())
             .executes {
                 threaded {
                     generateLocation(
@@ -116,120 +115,107 @@ object QuestCommand {
             }
             .build()
         getLocationTargetNode.addChild(genTarget2Node)
+        // /quest generate *type* location *target* *title*
+        val genTarget2NodeTitleArg = argument("title", MessageArgumentType.message())
+            .executes {
+                threaded {
+                    generateLocation(
+                        it, QuestArgumentType.getQuestType(it, "type"),
+                        BlockPosArgumentType.getBlockPos(it, "target"),
+                        MessageArgumentType.getMessage(it,"title").string
+                    )
+                }
+            }
+            .build()
+        genTarget2Node.addChild(genTarget2NodeTitleArg)
 
 
         // /quest list
-        val listNode = CommandManager
-            .literal("list")
-            .executes { threaded { list(it, null) } }
-            .build()
+        val listNode = literal("list").executes { threaded { list(it, null) } }.build()
         questNode.addChild(listNode)
         // /quest list *type*
-        val listTypeArgNode = CommandManager
-            .argument("type", QuestArgumentType())
+        val listTypeArgNode = questTypeArg("type")
             .executes { threaded { list(it, QuestArgumentType.getQuestType(it, "type")) } }
             .build()
         listNode.addChild(listTypeArgNode)
 
 
         // /quest get
-        val getNode = CommandManager
-            .literal("get")
-            .build()
+        val getNode = literal("get").build()
         questNode.addChild(getNode)
         // /quest get *id*
-        val getIdArgNode = CommandManager
-            .argument("id", IntegerArgumentType.integer(1))
+        val getIdArgNode = argument("id", IntegerArgumentType.integer(1))
             .executes { threaded { getQuest(it, IntegerArgumentType.getInteger(it, "id")) } }
             .build()
         getNode.addChild(getIdArgNode)
 
 
         // /quest delete
-        val deleteNode = CommandManager
-            .literal("delete")
-            .build()
+        val deleteNode = literal("delete").build()
         questNode.addChild(deleteNode)
         // /quest delete *id*
-        val deleteIdArgNode = CommandManager
-            .argument("id", IntegerArgumentType.integer(1))
+        val deleteIdArgNode = argument("id", IntegerArgumentType.integer(1))
             .executes { threaded { deleteQuest(it, IntegerArgumentType.getInteger(it, "id")) } }
             .build()
         deleteNode.addChild(deleteIdArgNode)
 
 
         // /quest export
-        val exportNode = CommandManager
-            .literal("export")
-            .executes { threaded { export(it) } }
-            .build()
+        val exportNode = literal("export").executes { threaded { export(it) } }.build()
         questNode.addChild(exportNode)
 
 
         // /quest import
-        val importNode = CommandManager
-            .literal("import")
-            .executes { threaded { import(it, false) } }
-            .build()
+        val importNode = literal("import").executes { threaded { import(it, false) } }.build()
         questNode.addChild(importNode)
         // /quest import *with_times_used*
-        val importTimesArgNode = CommandManager
-            .argument("with_times_used", BoolArgumentType.bool())
+        val importTimesArgNode = argument("with_times_used", BoolArgumentType.bool())
             .executes { threaded { import(it, BoolArgumentType.getBool(it, "with_times_used")) } }
             .build()
         importNode.addChild(importTimesArgNode)
 
 
         // /quest delete_all
-        val deleteAllNode = CommandManager
-            .literal("delete_all")
+        val deleteAllNode = literal("delete_all")
             .executes { threaded { deleteAll(it, true) } }
             .build()
         questNode.addChild(deleteAllNode)
         // /quest delete_all *backup*
-        val deleteAllBackupArgNode = CommandManager
-            .argument("backup", BoolArgumentType.bool())
+        val deleteAllBackupArgNode = argument("backup", BoolArgumentType.bool())
             .executes { threaded { deleteAll(it, BoolArgumentType.getBool(it, "backup")) } }
             .build()
         deleteAllNode.addChild(deleteAllBackupArgNode)
 
 
         // /quest players
-        val playersNode = CommandManager
-            .literal("players")
-            .build()
+        val playersNode = literal("players").build()
         questNode.addChild(playersNode)
 
         // /quest players add
-        val playerListAddNode = CommandManager
-            .literal("add")
-            .build()
+        val playerListAddNode = literal("add").build()
         playersNode.addChild(playerListAddNode)
         // /quest players add *player*
-        val playerListAddArgNode = CommandManager
-            .argument("player", GameProfileArgumentType.gameProfile())
+        val playerListAddArgNode = argument("player", GameProfileArgumentType.gameProfile())
             .executes { threaded { addPlayers(it, GameProfileArgumentType.getProfileArgument(it, "player")) } }
             .build()
         playerListAddNode.addChild(playerListAddArgNode)
 
         // /quest players list
-        val playerListNode = CommandManager
-            .literal("list")
-            .executes { threaded { listPlayers(it) } }
-            .build()
+        val playerListNode = literal("list").executes { threaded { listPlayers(it) } }.build()
         playersNode.addChild(playerListNode)
 
         // /quest players remove
-        val playerListRemoveNode = CommandManager
-            .literal("remove")
-            .build()
+        val playerListRemoveNode = literal("remove").build()
         playersNode.addChild(playerListRemoveNode)
         // /quest players remove *player*
-        val playerListRemoveArgNode = CommandManager
-            .argument("player", GameProfileArgumentType.gameProfile())
+        val playerListRemoveArgNode = argument("player", GameProfileArgumentType.gameProfile())
             .executes { threaded { removePlayers(it, GameProfileArgumentType.getProfileArgument(it, "player")) } }
             .build()
         playerListRemoveNode.addChild(playerListRemoveArgNode)
+
+        // /quest players list
+        val reloadConfigNode = literal("reload_config").executes(::reloadConfig).build()
+        questNode.addChild(reloadConfigNode)
     }
 
     private fun add(context: CommandContext<ServerCommandSource>): Int {
@@ -243,7 +229,7 @@ object QuestCommand {
     }
 
     private fun generate(
-        context: CommandContext<ServerCommandSource>, type: QuestType, inPlayers: Collection<ServerPlayerEntity>?
+        context: CommandContext<ServerCommandSource>, type: QuestType, inPlayers: Collection<ServerPlayerEntity>?, title: String = ""
     ): Int {
         val source = context.source
         var players = inPlayers
@@ -264,24 +250,26 @@ object QuestCommand {
             val result = QuestDatabaseManager.get(type, true)
             if (source.couldError(result.second)) return@generate 0
 
-            genBook(result.first!!, type, source.world, Vec3d(player.x, player.y, player.z), source)
+            source.genBook(result.first!!, type, source.world, Vec3d(player.x, player.y, player.z), title)
         }
 
         source.msg(output)
         return outInt!!
     }
 
-    private fun generateLocation(context: CommandContext<ServerCommandSource>, type: QuestType, pos: BlockPos): Int {
+    private fun generateLocation(context: CommandContext<ServerCommandSource>, type: QuestType, pos: BlockPos, title: String = ""): Int {
         val source = context.source
         val result = QuestDatabaseManager.get(type, true)
         if (source.couldError(result.second)) return 0
 
-        genBook(result.first!!, type, source.world, pos.ofCenter(), source)
+        source.genBook(result.first!!, type, source.world, pos.ofCenter(), title)
         source.msg("Quest spawned at ${pos.x} ${pos.y} ${pos.z}")
         return 1
     }
 
-    private fun genBook(iData: String, type: QuestType, world: ServerWorld, pos: Vec3d, src: ServerCommandSource) {
+    private fun ServerCommandSource.genBook(
+        iData: String, type: QuestType, world: ServerWorld, pos: Vec3d, title: String = ""
+    ) {
         var data = iData
         try {
             if (data.contains("[")) {
@@ -290,9 +278,9 @@ object QuestCommand {
 
                 while (data.contains("[p]")) {
                     val result = QuestDatabaseManager.getPlayer(true)
-                    if (src.couldError(result.second)) return
+                    if (this.couldError(result.second)) return
 
-                    val player = src.server.userCache?.getByUuid(UUID.fromString(result.first))?.get()?.name
+                    val player = this.server.userCache?.getByUuid(UUID.fromString(result.first))?.get()?.name
 
                     data = data.replaceFirst("[p]", player ?: "[Player Not Found]")
                 }
@@ -304,7 +292,7 @@ object QuestCommand {
                         println(procData)
                         if (procData[0] > procData[1]) {
                             val err = "Wrong input for Number Template for entry [$data]"
-                            src.error(err)
+                            this.error(err)
                             throw Error(err)
                         }
                         "${Random.nextInt(procData[0], procData[1] + 1)}"
@@ -313,14 +301,14 @@ object QuestCommand {
                         .reduceIndexed { idx, acc, s -> "$acc${if (idx - 1 < inputs.size) inputs[idx - 1] else ""}$s" }
                 }
             }
-        } catch (e: NumberFormatException){
-            e.message?.let { src.error(it) }
+        } catch (e: NumberFormatException) {
+            e.message?.let { this.error(it) }
             throw e
         }
 
         val book = Items.WRITTEN_BOOK.defaultStack
-        book.setSubNbt("author", NbtString.of(QuestConfig.data.bookAuthorName))
-        book.setSubNbt("title", NbtString.of("$type Quest"))
+        book.setSubNbt("author", NbtString.of(QuestConfig.config.bookAuthorName))
+        book.setSubNbt("title", NbtString.of(title.ifEmpty { "$type Quest" }))
         val list = NbtList()
         list.add(NbtString.of(Text.Serializer.toJson(Text.literal(data))))
         book.setSubNbt("pages", list)
@@ -452,6 +440,17 @@ object QuestCommand {
         val data = result.first!!
         val pm = source.server.userCache
         data.forEach { source.msg("[${it.first}] - ${pm?.getByUuid(UUID.fromString(it.second))?.get()?.name}") }
+        return 1
+    }
+
+    private fun reloadConfig(context: CommandContext<ServerCommandSource>): Int {
+        Thread {
+            when (QuestConfig.load()) {
+                1 -> context.source.msg("Config reloaded!")
+                0 -> context.source.msg("No config was found! Created a new one.")
+                else -> context.source.sError("Could not load config file! Check the log for more info.")
+            }
+        }.start()
         return 1
     }
 

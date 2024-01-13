@@ -1,5 +1,6 @@
 package com.theendercore.quest_life
 
+import com.theendercore.quest_life.config.QuestConfig
 import com.theendercore.quest_life.init.CommandRegistry
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.util.Identifier
@@ -23,6 +24,7 @@ object QuestLife {
     fun commonInit() {
         log.info("Hello from Common")
         Paths.get(ModDir).toFile().mkdirs()
+        QuestConfig.load()
         QuestDatabaseManager.init()
         CommandRegistry.init()
     }
