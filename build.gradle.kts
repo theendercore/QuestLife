@@ -11,12 +11,19 @@ group = project.properties["maven_group"]!!
 version = project.properties["mod_version"]!!
 base.archivesName.set(project.properties["archives_base_name"] as String)
 description = "Quest Life is a mod thats inspired by Grians secret life series. Made for the Cornerstone version of it."
-val modid = project.properties["modid"]!! as String
+val modid: String by project
+val server_translations: String by project
+val sqlite_jdbc: String by project
 
 repositories {
     mavenCentral()
-    maven("https://api.modrinth.com/maven") {
-        name = "Modrinth"
+    exclusiveContent {
+        forRepository { maven("https://api.modrinth.com/maven") }
+        filter { includeGroup("maven.modrinth") }
+    }
+    exclusiveContent {
+        forRepository { maven("https://maven.nucleoid.xyz") }
+        filter { includeGroup("xyz.nucleoid") }
     }
 }
 
@@ -27,8 +34,8 @@ modSettings {
     entrypoint("main", "com.theendercore.quest_life.QuestLife::commonInit")
 }
 dependencies {
-    modImplementation ("maven.modrinth:sqlite-jdbc:3.41.2.1+20230506")
-    include("maven.modrinth:sqlite-jdbc:3.41.2.1+20230506")
+    modImplementation(include("maven.modrinth", "sqlite-jdbc", sqlite_jdbc))
+    modImplementation(include("xyz.nucleoid", "server-translations-api", server_translations))
 }
 
 tasks {

@@ -379,7 +379,7 @@ object QuestCommand {
                 }
             }
         } catch (e: Error) {
-            source.sendError(Text.literal("[Error While Importing] $e"))
+            source.sError("[Error While Importing] $e")
             return 0
         }
         source.msg("$questCount Quests imported!")
@@ -474,8 +474,8 @@ object QuestCommand {
 
     private fun String.cap(): String = this.replaceFirstChar { it.uppercaseChar() }
     private fun ServerCommandSource.error(str: String) = this.sError("Error : $str")
-    private fun ServerCommandSource.sError(str: String) = this.sendError(Text.literal(str))
-    private fun ServerCommandSource.msg(str: String) = this.sendFeedback({ Text.literal(str) }, false)
+    private fun ServerCommandSource.sError(str: String) = this.sendError(Text.translatable(str))
+    private fun ServerCommandSource.msg(str: String) = this.sendFeedback({ Text.translatable(str) }, false)
 
     private fun ServerCommandSource.couldError(error: Optional<String>) =
         if (error.isPresent) {

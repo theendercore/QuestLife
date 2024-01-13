@@ -33,11 +33,13 @@ object QuestConfig {
                     val configVersion = jsonObject.getAsJsonPrimitive("version").asDouble
                     if (configVersion == CURRENT_VERSION) {
                         config = json.decodeFromString(stringData)
+                        log.info("Loaded config!")
                         return 1
                     }
                     val serializer = SUPPORTED_VERSIONS[configVersion]
                     if (serializer != null) {
                         config = ConfigData(json.decodeFromString(serializer, stringData))
+                        log.info("Loaded older config!")
                         return 1
                     }
                     throw Error("No supported version found!")
