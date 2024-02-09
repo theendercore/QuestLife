@@ -1,13 +1,13 @@
 projectTitle = "Quest Life"
 modId = "quest_life"
-githubRepo = "theendercore/TaskLife"
+githubRepo = "theendercore/QuestLife"
 discordServerInviteId = "KZ5Q364hEg"
 authors = [ "TheEnderCore" ]
 majorMinecraftVersion = "1.20"
-minecraftVersion = "1.20.2"
-fabricLoaderVersion = "0.14.24"
-fabricApiVersion = "0.90.7+1.20.2"
-fabricLangKotlinVersion = "1.10.14+kotlin.1.9.20"
+minecraftVersion = "1.20.4"
+fabricLoaderVersion = "0.15.6"
+fabricApiVersion = "0.95.4+1.20.4"
+fabricLangKotlinVersion = "1.10.17+kotlin.1.9.22"
 license = "MIT"
 modules = [ ]
 
@@ -20,4 +20,4 @@ modules = [ ]
     # MOJPARCH: Parchment layered on top of the official Mojang mappings
     # MOJYARN: Yarn layered on top of the official Mojang mappings
     type = "QUILT"
-    version = "1.20.2+build.3"
+    version = "1.20.4+build.3"

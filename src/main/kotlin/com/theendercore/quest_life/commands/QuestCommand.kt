@@ -45,7 +45,7 @@ object QuestCommand {
     ) {
 
         // /quest
-        val questNode = literal("quest").requires { it.hasPermissionLevel(2) }.build()
+        val questNode = literal("quest").requires { it.hasPermission(2) }.build()
         dispatcher.root.addChild(questNode)
 
 

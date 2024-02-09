@@ -2,15 +2,15 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id("fabric-loom") version "1.3.8"
-    kotlin("jvm") version "1.9.0"
-    kotlin("plugin.serialization") version "1.9.0"
+    kotlin("jvm") version "1.9.22"
+    kotlin("plugin.serialization") version "1.9.22"
     id("org.teamvoided.iridium") version "3.1.0"
 }
 
 group = project.properties["maven_group"]!!
 version = project.properties["mod_version"]!!
 base.archivesName.set(project.properties["archives_base_name"] as String)
-description = "Quest Life is a mod thats inspired by Grians secret life series. Made for the Cornerstone version of it."
+description = "Quest Life is a mod thats inspired by Grians Secret Life series. Made for the Quest Collectors SMP."
 val modid: String by project
 val server_translations: String by project
 val sqlite_jdbc: String by project
